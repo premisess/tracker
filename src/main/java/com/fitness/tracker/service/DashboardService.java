@@ -1,5 +1,6 @@
 package com.fitness.tracker.service;
 
+import com.fitness.tracker.exception.UnauthorizedException;
 import com.fitness.tracker.dto.DashboardSummary;
 import com.fitness.tracker.entity.BmiRecord;
 import com.fitness.tracker.entity.Goal;
@@ -113,6 +114,6 @@ public class DashboardService {
     private User getCurrentUser() {
         String email = SecurityUtil.getCurrentUserEmail();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UnauthorizedException("Your session has expired. Please sign in again."));
     }
 }

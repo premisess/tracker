@@ -1,5 +1,6 @@
 package com.fitness.tracker.controller;
 
+import jakarta.validation.Valid;
 import com.fitness.tracker.dto.BmiDTO;
 import com.fitness.tracker.dto.BmiResponse;
 import com.fitness.tracker.service.BmiService;
@@ -19,7 +20,7 @@ public class BmiController {
     }
 
     @PostMapping
-    public ResponseEntity<BmiResponse> calculate(@RequestBody BmiDTO dto) {
+    public ResponseEntity<BmiResponse> calculate(@Valid @RequestBody BmiDTO dto) {
         return ResponseEntity.ok(bmiService.calculateAndSave(dto));
     }
 

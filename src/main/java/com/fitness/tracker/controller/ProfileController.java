@@ -1,5 +1,12 @@
 package com.fitness.tracker.controller;
 
+import jakarta.validation.Valid;
+import com.fitness.tracker.exception.BadRequestException;
+import com.fitness.tracker.exception.UnauthorizedException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import com.fitness.tracker.dto.ProfileDTO;
 import com.fitness.tracker.dto.ProfileResponse;
 import com.fitness.tracker.entity.Profile;
@@ -38,47 +45,50 @@ public class ProfileController {
     }
 
     @PutMapping
-    public ResponseEntity<ProfileResponse> updateProfile(@RequestBody ProfileDTO dto) {
+    public ResponseEntity<ProfileResponse> updateProfile(@Valid @RequestBody ProfileDTO dto) {
         return ResponseEntity.ok(profileService.updateMyProfileResponse(dto));
     }
 
     @PostMapping("/upload-picture")
     public ResponseEntity<String> uploadPicture(@RequestParam("file") MultipartFile file) {
-        try {
-            String contentType = file.getContentType();
-            if (contentType == null || !contentType.startsWith("image/")) {
-                return ResponseEntity.badRequest().body("Only image uploads are allowed");
-            }
-
-            String uploadDir = "uploads/";
-            File dir = new File(uploadDir);
-            if (!dir.exists()) dir.mkdirs();
-
-            // Strip any path segments from the original name so it can't escape the uploads dir.
-            String originalName = Paths.get(file.getOriginalFilename() != null ? file.getOriginalFilename() : "image")
-                    .getFileName().toString();
-            String fileName = System.currentTimeMillis() + "_" + originalName;
-            String filePath = uploadDir + fileName;
-            file.transferTo(new File(filePath));
-
-            String email = SecurityUtil.getCurrentUserEmail();
-            User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-
-            Profile profile = profileRepository.findByUserId(user.getId())
-                    .orElseGet(() -> {
-                        Profile p = new Profile();
-                        p.setUser(user);
-                        return p;
-                    });
-
-            profile.setProfilePic(fileName);
-            profileRepository.save(profile);
-
-            return ResponseEntity.ok(fileName);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Upload failed");
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new BadRequestException("Only image uploads are allowed");
         }
+
+        // Strip any path segments from the original name so it can't escape the uploads dir.
+        String originalName = Paths.get(file.getOriginalFilename() != null ? file.getOriginalFilename() : "image")
+                .getFileName().toString();
+        String fileName = System.currentTimeMillis() + "_" + originalName;
+
+        try {
+            // Must be absolute: MultipartFile resolves relative paths against the servlet
+            // container's temp directory, so the old "uploads/" + name never landed where
+            // getPicture() looks for it.
+            Path uploadsDir = Paths.get("uploads").toAbsolutePath().normalize();
+            Files.createDirectories(uploadsDir);
+            try (InputStream in = file.getInputStream()) {
+                Files.copy(in, uploadsDir.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException e) {
+            throw new BadRequestException("Upload failed. Please try a different image.");
+        }
+
+        String email = SecurityUtil.getCurrentUserEmail();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UnauthorizedException("Your session has expired. Please sign in again."));
+
+        Profile profile = profileRepository.findByUserId(user.getId())
+                .orElseGet(() -> {
+                    Profile p = new Profile();
+                    p.setUser(user);
+                    return p;
+                });
+
+        profile.setProfilePic(fileName);
+        profileRepository.save(profile);
+
+        return ResponseEntity.ok(fileName);
     }
 
     @GetMapping("/picture/{fileName}")
@@ -93,8 +103,9 @@ public class ProfileController {
             if (!resource.exists()) {
                 return ResponseEntity.notFound().build();
             }
+            String type = Files.probeContentType(filePath);
             return ResponseEntity.ok()
-                    .header("Content-Type", "image/jpeg")
+                    .header("Content-Type", type != null ? type : "application/octet-stream")
                     .body(resource);
         } catch (Exception e) {
             return ResponseEntity.notFound().build();

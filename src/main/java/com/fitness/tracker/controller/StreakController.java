@@ -1,5 +1,6 @@
 package com.fitness.tracker.controller;
 
+import com.fitness.tracker.exception.UnauthorizedException;
 import com.fitness.tracker.entity.User;
 import com.fitness.tracker.repository.UserRepository;
 import com.fitness.tracker.security.SecurityUtil;
@@ -26,7 +27,7 @@ public class StreakController {
     public ResponseEntity<Map<String, Integer>> getStreak() {
         String email = SecurityUtil.getCurrentUserEmail();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UnauthorizedException("Your session has expired. Please sign in again."));
 
         Map<String, Integer> result = new HashMap<>();
         result.put("currentStreak", streakService.getCurrentStreak(user.getId()));

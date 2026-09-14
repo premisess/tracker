@@ -1,5 +1,9 @@
 package com.fitness.tracker.controller;
 
+import jakarta.validation.Valid;
+import com.fitness.tracker.exception.BadRequestException;
+import com.fitness.tracker.exception.ConflictException;
+import com.fitness.tracker.exception.NotFoundException;
 import com.fitness.tracker.dto.RegisterRequest;
 import com.fitness.tracker.entity.User;
 import com.fitness.tracker.entity.Workout;
@@ -53,14 +57,14 @@ public class AdminController {
     @DeleteMapping("/users/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         if (user.getRole() == User.Role.ADMIN) {
             long adminCount = userRepository.findAll().stream()
                     .filter(u -> u.getRole() == User.Role.ADMIN)
                     .count();
             if (adminCount <= 1) {
-                return ResponseEntity.badRequest().body("Cannot delete the last admin. Create another admin first!");
+                throw new BadRequestException("Cannot delete the last admin. Create another admin first!");
             }
         }
 
@@ -110,9 +114,9 @@ public class AdminController {
     }
 
     @PostMapping("/create-admin")
-    public ResponseEntity<String> createAdmin(@RequestBody RegisterRequest request) {
+    public ResponseEntity<String> createAdmin(@Valid @RequestBody RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already in use");
+            throw new ConflictException("Email already in use");
         }
 
         User admin = new User();

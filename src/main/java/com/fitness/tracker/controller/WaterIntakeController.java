@@ -1,5 +1,6 @@
 package com.fitness.tracker.controller;
 
+import jakarta.validation.Valid;
 import com.fitness.tracker.dto.WaterIntakeDTO;
 import com.fitness.tracker.dto.WaterIntakeResponse;
 import com.fitness.tracker.service.WaterIntakeService;
@@ -19,7 +20,7 @@ public class WaterIntakeController {
     }
 
     @PostMapping
-    public ResponseEntity<WaterIntakeResponse> logIntake(@RequestBody WaterIntakeDTO dto) {
+    public ResponseEntity<WaterIntakeResponse> logIntake(@Valid @RequestBody WaterIntakeDTO dto) {
         return ResponseEntity.ok(waterIntakeService.logIntake(dto));
     }
 

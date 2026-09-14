@@ -1,5 +1,7 @@
 package com.fitness.tracker.service;
 
+import java.time.LocalDate;
+import com.fitness.tracker.exception.UnauthorizedException;
 import com.fitness.tracker.dto.BmiDTO;
 import com.fitness.tracker.dto.BmiResponse;
 import com.fitness.tracker.entity.BmiRecord;
@@ -38,7 +40,7 @@ public class BmiService {
         record.setHeight(dto.getHeight());
         record.setBmiValue(bmi);
         record.setCategory(category);
-        record.setDate(dto.getDate());
+        record.setDate(dto.getDate() != null ? dto.getDate() : LocalDate.now());
 
         record = bmiRecordRepository.save(record);
         return toResponse(record);
@@ -73,6 +75,6 @@ public class BmiService {
     private User getCurrentUser() {
         String email = SecurityUtil.getCurrentUserEmail();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UnauthorizedException("Your session has expired. Please sign in again."));
     }
 }

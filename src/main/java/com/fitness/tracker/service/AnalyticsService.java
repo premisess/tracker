@@ -1,5 +1,6 @@
 package com.fitness.tracker.service;
 
+import com.fitness.tracker.exception.UnauthorizedException;
 import com.fitness.tracker.dto.AnalyticsSummary;
 import com.fitness.tracker.dto.DailyPoint;
 import com.fitness.tracker.dto.WorkoutTypeBreakdown;
@@ -85,6 +86,6 @@ public class AnalyticsService {
     private User getCurrentUser() {
         String email = SecurityUtil.getCurrentUserEmail();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UnauthorizedException("Your session has expired. Please sign in again."));
     }
 }

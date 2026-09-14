@@ -1,5 +1,7 @@
 package com.fitness.tracker.service;
 
+import com.fitness.tracker.exception.ConflictException;
+import com.fitness.tracker.exception.UnauthorizedException;
 import com.fitness.tracker.dto.*;
 import com.fitness.tracker.entity.User;
 import com.fitness.tracker.repository.UserRepository;
@@ -38,7 +40,7 @@ public class AuthService {
 
     public AuthResponse register(RegisterRequest request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already in use");
+            throw new ConflictException("Email already in use");
         }
 
         User user = new User();
@@ -71,7 +73,7 @@ public class AuthService {
         establishSession(authentication, httpRequest, httpResponse);
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UnauthorizedException("Your session has expired. Please sign in again."));
 
         return new AuthResponse(user.getName(), user.getEmail(), user.getRole().name());
     }
@@ -92,7 +94,7 @@ public class AuthService {
     public AuthResponse currentUser() {
         String email = SecurityUtil.getCurrentUserEmail();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UnauthorizedException("Your session has expired. Please sign in again."));
         return new AuthResponse(user.getName(), user.getEmail(), user.getRole().name());
     }
 

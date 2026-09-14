@@ -1,5 +1,8 @@
 package com.fitness.tracker.service;
 
+import com.fitness.tracker.exception.BadRequestException;
+import com.fitness.tracker.exception.ConflictException;
+import com.fitness.tracker.exception.UnauthorizedException;
 import com.fitness.tracker.dto.ChangeEmailRequest;
 import com.fitness.tracker.dto.ChangePasswordRequest;
 import com.fitness.tracker.entity.User;
@@ -56,10 +59,10 @@ public class AccountService {
     public void changePassword(ChangePasswordRequest request) {
         User user = getCurrentUser();
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new RuntimeException("Current password is incorrect");
+            throw new BadRequestException("Current password is incorrect");
         }
         if (request.getNewPassword() == null || request.getNewPassword().length() < 8) {
-            throw new RuntimeException("New password must be at least 8 characters");
+            throw new BadRequestException("New password must be at least 8 characters");
         }
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
@@ -68,14 +71,14 @@ public class AccountService {
     public User changeEmail(ChangeEmailRequest request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
         User user = getCurrentUser();
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new RuntimeException("Current password is incorrect");
+            throw new BadRequestException("Current password is incorrect");
         }
         String newEmail = request.getNewEmail() != null ? request.getNewEmail().trim() : null;
         if (newEmail == null || newEmail.isBlank()) {
-            throw new RuntimeException("Email cannot be empty");
+            throw new BadRequestException("Email cannot be empty");
         }
         if (!newEmail.equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmail(newEmail)) {
-            throw new RuntimeException("Email already in use");
+            throw new ConflictException("Email already in use");
         }
 
         user.setEmail(newEmail);
@@ -96,7 +99,7 @@ public class AccountService {
 
     public void updateName(String newName) {
         if (newName == null || newName.isBlank()) {
-            throw new RuntimeException("Name cannot be empty");
+            throw new BadRequestException("Name cannot be empty");
         }
         User user = getCurrentUser();
         user.setName(newName.trim());
@@ -112,7 +115,7 @@ public class AccountService {
                     .filter(u -> u.getRole() == User.Role.ADMIN)
                     .count();
             if (adminCount <= 1) {
-                throw new RuntimeException("Cannot delete the last admin. Create another admin first!");
+                throw new BadRequestException("Cannot delete the last admin. Create another admin first!");
             }
         }
 
@@ -137,6 +140,6 @@ public class AccountService {
     private User getCurrentUser() {
         String email = SecurityUtil.getCurrentUserEmail();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UnauthorizedException("Your session has expired. Please sign in again."));
     }
 }

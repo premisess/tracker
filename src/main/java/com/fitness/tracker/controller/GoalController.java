@@ -1,5 +1,7 @@
 package com.fitness.tracker.controller;
 
+import jakarta.validation.Valid;
+import com.fitness.tracker.dto.ProgressRequest;
 import com.fitness.tracker.dto.GoalDTO;
 import com.fitness.tracker.dto.GoalResponse;
 import com.fitness.tracker.service.GoalService;
@@ -20,7 +22,7 @@ public class GoalController {
     }
 
     @PostMapping
-    public ResponseEntity<GoalResponse> addGoal(@RequestBody GoalDTO dto) {
+    public ResponseEntity<GoalResponse> addGoal(@Valid @RequestBody GoalDTO dto) {
         return ResponseEntity.ok(goalService.addGoal(dto));
     }
 
@@ -30,13 +32,13 @@ public class GoalController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<GoalResponse> updateGoal(@PathVariable Long id, @RequestBody GoalDTO dto) {
+    public ResponseEntity<GoalResponse> updateGoal(@PathVariable Long id, @Valid @RequestBody GoalDTO dto) {
         return ResponseEntity.ok(goalService.updateGoal(id, dto));
     }
 
     @PatchMapping("/{id}/progress")
-    public ResponseEntity<GoalResponse> updateProgress(@PathVariable Long id, @RequestBody Map<String, Double> body) {
-        return ResponseEntity.ok(goalService.updateProgress(id, body.get("progress")));
+    public ResponseEntity<GoalResponse> updateProgress(@PathVariable Long id, @Valid @RequestBody ProgressRequest body) {
+        return ResponseEntity.ok(goalService.updateProgress(id, body.getProgress()));
     }
 
     @DeleteMapping("/{id}")

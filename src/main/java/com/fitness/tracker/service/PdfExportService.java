@@ -1,5 +1,6 @@
 package com.fitness.tracker.service;
 
+import com.fitness.tracker.exception.UnauthorizedException;
 import com.fitness.tracker.entity.User;
 import com.fitness.tracker.entity.Workout;
 import com.fitness.tracker.repository.UserRepository;
@@ -108,6 +109,6 @@ public class PdfExportService {
     private User getCurrentUser() {
         String email = SecurityUtil.getCurrentUserEmail();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UnauthorizedException("Your session has expired. Please sign in again."));
     }
 }

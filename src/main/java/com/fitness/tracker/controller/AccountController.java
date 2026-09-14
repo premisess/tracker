@@ -1,5 +1,7 @@
 package com.fitness.tracker.controller;
 
+import jakarta.validation.Valid;
+import com.fitness.tracker.dto.UpdateNameRequest;
 import com.fitness.tracker.dto.AuthResponse;
 import com.fitness.tracker.dto.ChangeEmailRequest;
 import com.fitness.tracker.dto.ChangePasswordRequest;
@@ -23,21 +25,21 @@ public class AccountController {
     }
 
     @PutMapping("/password")
-    public ResponseEntity<Void> changePassword(@RequestBody ChangePasswordRequest request) {
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         accountService.changePassword(request);
         return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/email")
-    public ResponseEntity<AuthResponse> changeEmail(@RequestBody ChangeEmailRequest request,
+    public ResponseEntity<AuthResponse> changeEmail(@Valid @RequestBody ChangeEmailRequest request,
                                                       HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
         User user = accountService.changeEmail(request, httpRequest, httpResponse);
         return ResponseEntity.ok(new AuthResponse(user.getName(), user.getEmail(), user.getRole().name()));
     }
 
     @PutMapping("/name")
-    public ResponseEntity<Void> updateName(@RequestBody Map<String, String> body) {
-        accountService.updateName(body.get("name"));
+    public ResponseEntity<Void> updateName(@Valid @RequestBody UpdateNameRequest body) {
+        accountService.updateName(body.getName());
         return ResponseEntity.noContent().build();
     }
 
