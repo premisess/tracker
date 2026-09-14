@@ -1,5 +1,6 @@
 package com.fitness.tracker.controller;
 
+import jakarta.validation.Valid;
 import com.fitness.tracker.dto.WorkoutDTO;
 import com.fitness.tracker.dto.WorkoutResponse;
 import com.fitness.tracker.enums.WorkoutType;
@@ -20,7 +21,7 @@ public class WorkoutController {
     }
 
     @PostMapping
-    public ResponseEntity<WorkoutResponse> addWorkout(@RequestBody WorkoutDTO dto) {
+    public ResponseEntity<WorkoutResponse> addWorkout(@Valid @RequestBody WorkoutDTO dto) {
         return ResponseEntity.ok(workoutService.addWorkout(dto));
     }
 
@@ -29,8 +30,13 @@ public class WorkoutController {
         return ResponseEntity.ok(workoutService.getMyWorkouts());
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<WorkoutResponse> getWorkout(@PathVariable Long id) {
+        return ResponseEntity.ok(workoutService.getWorkout(id));
+    }
+
     @PutMapping("/{id}")
-    public ResponseEntity<WorkoutResponse> updateWorkout(@PathVariable Long id, @RequestBody WorkoutDTO dto) {
+    public ResponseEntity<WorkoutResponse> updateWorkout(@PathVariable Long id, @Valid @RequestBody WorkoutDTO dto) {
         return ResponseEntity.ok(workoutService.updateWorkout(id, dto));
     }
 

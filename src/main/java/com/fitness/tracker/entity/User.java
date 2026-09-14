@@ -36,6 +36,14 @@ public class User {
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
+    // When the user agreed to GPS route recording. Null means no consent, and no routes are accepted.
+    @Column(name = "location_consent_at")
+    private LocalDateTime locationConsentAt;
+
+    // Radius around a route's start and finish that is hidden whenever the route is shared.
+    @Column(name = "route_privacy_meters", nullable = false)
+    private Integer routePrivacyMeters = 200;
+
     public enum Role {
         USER, ADMIN
     }

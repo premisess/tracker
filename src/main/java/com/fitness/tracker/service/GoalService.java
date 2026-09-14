@@ -1,5 +1,7 @@
 package com.fitness.tracker.service;
 
+import com.fitness.tracker.exception.NotFoundException;
+import com.fitness.tracker.exception.UnauthorizedException;
 import com.fitness.tracker.dto.GoalDTO;
 import com.fitness.tracker.dto.GoalResponse;
 import com.fitness.tracker.entity.Goal;
@@ -55,7 +57,7 @@ public class GoalService {
 
     public GoalResponse updateProgress(Long id, Double newProgress) {
         Goal goal = goalRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Goal not found"));
+                .orElseThrow(() -> new NotFoundException("Goal not found"));
         checkOwnership(goal);
         goal.setCurrentProgress(newProgress);
         updateStatus(goal);
@@ -65,7 +67,7 @@ public class GoalService {
 
     public GoalResponse updateGoal(Long id, GoalDTO dto) {
         Goal goal = goalRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Goal not found"));
+                .orElseThrow(() -> new NotFoundException("Goal not found"));
         checkOwnership(goal);
         goal.setTitle(dto.getTitle());
         goal.setGoalType(dto.getGoalType());
@@ -81,13 +83,19 @@ public class GoalService {
 
     public void deleteGoal(Long id) {
         Goal goal = goalRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Goal not found"));
+                .orElseThrow(() -> new NotFoundException("Goal not found"));
         checkOwnership(goal);
         goalRepository.delete(goal);
     }
 
     // Called automatically when a workout is logged
     public void autoUpdateGoalsFromWorkout(User user, String workoutType, Integer duration, Integer caloriesBurned) {
+        autoUpdateGoalsFromWorkout(user, workoutType, duration, caloriesBurned, null);
+    }
+
+    // distanceKm is the measured distance of a GPS activity, or null for manually logged workouts.
+    public void autoUpdateGoalsFromWorkout(User user, String workoutType, Integer duration, Integer caloriesBurned,
+                                           Double distanceKm) {
         List<Goal> goals = goalRepository.findByUserId(user.getId());
 
         for (Goal goal : goals) {
@@ -109,8 +117,8 @@ public class GoalService {
                 case RUN_MORE:
                     // Only count Running workouts
                     if (workoutType.equalsIgnoreCase("Running")) {
-                        // Estimate km: average running speed 8km/h
-                        double km = (duration / 60.0) * 8.0;
+                        // GPS runs count their real distance; manual logs estimate it at 8 km/h.
+                        double km = distanceKm != null ? distanceKm : (duration / 60.0) * 8.0;
                         goal.setCurrentProgress(
                                 (goal.getCurrentProgress() == null ? 0 : goal.getCurrentProgress()) + km
                         );
@@ -171,7 +179,7 @@ public class GoalService {
     private void checkOwnership(Goal goal) {
         User user = getCurrentUser();
         if (!goal.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("You do not have permission to modify this goal");
+            throw new NotFoundException("Goal not found");
         }
     }
 
@@ -199,6 +207,6 @@ public class GoalService {
     private User getCurrentUser() {
         String email = SecurityUtil.getCurrentUserEmail();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UnauthorizedException("Your session has expired. Please sign in again."));
     }
 }
