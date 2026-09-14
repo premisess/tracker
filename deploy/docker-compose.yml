@@ -1,0 +1,69 @@
+# One-server deployment: MySQL + the Spring Boot API + Caddy serving the React site.
+#
+# The site and the API share one domain (Caddy forwards /api to the backend), so the login
+# cookie works without any cross-site settings, and Caddy gets an HTTPS certificate from
+# Let's Encrypt automatically. HTTPS is required: browsers only allow GPS on secure pages.
+#
+#   1. Put this repo and fitness-tracker-ui on the server, side by side.
+#   2. Point your domain's DNS at the server and open ports 80 and 443.
+#   3. cp deploy/.env.example deploy/.env   and fill it in.
+#   4. docker compose --env-file deploy/.env -f deploy/docker-compose.yml up -d --build
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: fitness_tracker
+      MYSQL_USER: fittracker
+      MYSQL_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in deploy/.env}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in deploy/.env}
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    build: ..
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:mysql://db:3306/fitness_tracker
+      DB_USERNAME: fittracker
+      DB_PASSWORD: ${DB_PASSWORD}
+      MAIL_USERNAME: ${MAIL_USERNAME:?set MAIL_USERNAME in deploy/.env}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:?set MAIL_PASSWORD in deploy/.env}
+      APP_FRONTEND_URL: https://${SITE_ADDRESS}
+      APP_CORS_ORIGINS: https://${SITE_ADDRESS}
+      SESSION_COOKIE_SECURE: "true"
+    volumes:
+      # Profile pictures; without a volume they'd vanish on every redeploy.
+      - uploads:/app/uploads
+
+  web:
+    build: ${FRONTEND_PATH:?set FRONTEND_PATH in deploy/.env}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in deploy/.env}
+      BACKEND_ADDRESS: backend:8080
+    volumes:
+      # Caddy's certificates; keep them so it doesn't re-request on every restart.
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  db-data:
+  uploads:
+  caddy-data:
+  caddy-config:
