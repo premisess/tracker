@@ -34,7 +34,7 @@ public class AccountController {
     public ResponseEntity<AuthResponse> changeEmail(@Valid @RequestBody ChangeEmailRequest request,
                                                       HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
         User user = accountService.changeEmail(request, httpRequest, httpResponse);
-        return ResponseEntity.ok(new AuthResponse(user.getName(), user.getEmail(), user.getRole().name()));
+        return ResponseEntity.ok(AuthResponse.of(user));
     }
 
     @PutMapping("/name")

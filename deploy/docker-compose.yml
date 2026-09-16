@@ -41,6 +41,7 @@ services:
       APP_FRONTEND_URL: https://${SITE_ADDRESS}
       APP_CORS_ORIGINS: https://${SITE_ADDRESS}
       SESSION_COOKIE_SECURE: "true"
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     volumes:
       # Profile pictures; without a volume they'd vanish on every redeploy.
       - uploads:/app/uploads

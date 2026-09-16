@@ -2,12 +2,16 @@ package com.fitness.tracker.service;
 
 import com.fitness.tracker.entity.Goal;
 import com.fitness.tracker.entity.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 @Service
 public class NotificationService {
+
+    private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
 
     private final JavaMailSender mailSender;
 
@@ -23,6 +27,18 @@ public class NotificationService {
                         "1. Complete your profile\n" +
                         "2. Set a goal\n" +
                         "3. Log your first workout\n\n" +
+                        "FitTracker Team");
+    }
+
+    public void sendVerificationEmail(User user, String link, boolean welcome) {
+        String subject = welcome ? "Welcome to FitTracker - please confirm your email" : "FitTracker - confirm your email";
+        String intro = welcome
+                ? "Welcome to FitTracker! Your account is ready.\n\nPlease confirm your email address so we can keep your account secure:\n"
+                : "Please confirm your email address by opening this link:\n";
+        send(user.getEmail(), subject,
+                "Hi " + user.getName() + ",\n\n" +
+                        intro + link + "\n\n" +
+                        "The link works for 24 hours. If you didn't create a FitTracker account, you can ignore this email.\n\n" +
                         "FitTracker Team");
     }
 
@@ -42,7 +58,8 @@ public class NotificationService {
             message.setSubject(subject);
             message.setText(body);
             mailSender.send(message);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            log.warn("Could not send \"{}\" email: {}", subject, e.getMessage());
         }
     }
 }

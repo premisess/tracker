@@ -23,4 +23,13 @@ public class DashboardSummary {
     private int waterTodayMl;
     private boolean hasWaterLog;
     private int longestStreak;
+    private boolean emailVerified;
+    private long badgesEarned;
+    private int caloriesEatenToday;
+    private int calorieTarget;
+    // The plan being followed and its next session; null when not following one.
+    private String activePlanName;
+    private String activePlanSlug;
+    private String nextPlanSession;
+    private Integer planProgressPercent;
 }

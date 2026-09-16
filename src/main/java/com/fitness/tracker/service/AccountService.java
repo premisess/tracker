@@ -38,13 +38,15 @@ public class AccountService {
     private final PasswordEncoder passwordEncoder;
     private final CustomUserDetailsService userDetailsService;
     private final SecurityContextRepository securityContextRepository;
+    private final EmailVerificationService emailVerificationService;
 
     public AccountService(UserRepository userRepository, ProfileRepository profileRepository,
                            GoalRepository goalRepository, WorkoutRepository workoutRepository,
                            BmiRecordRepository bmiRecordRepository, WaterIntakeRepository waterIntakeRepository,
                            PasswordEncoder passwordEncoder,
                            CustomUserDetailsService userDetailsService,
-                           SecurityContextRepository securityContextRepository) {
+                           SecurityContextRepository securityContextRepository,
+                           EmailVerificationService emailVerificationService) {
         this.userRepository = userRepository;
         this.profileRepository = profileRepository;
         this.goalRepository = goalRepository;
@@ -54,6 +56,7 @@ public class AccountService {
         this.passwordEncoder = passwordEncoder;
         this.userDetailsService = userDetailsService;
         this.securityContextRepository = securityContextRepository;
+        this.emailVerificationService = emailVerificationService;
     }
 
     public void changePassword(ChangePasswordRequest request) {
@@ -81,7 +84,12 @@ public class AccountService {
             throw new ConflictException("Email already in use");
         }
 
+        boolean changed = !newEmail.equalsIgnoreCase(user.getEmail());
         user.setEmail(newEmail);
+        if (changed) {
+            // The new address hasn't been confirmed yet.
+            user.setEmailVerified(false);
+        }
         userRepository.save(user);
 
         // The session's Authentication still carries the old email as its principal name;
@@ -94,6 +102,9 @@ public class AccountService {
         SecurityContextHolder.setContext(context);
         securityContextRepository.saveContext(context, httpRequest, httpResponse);
 
+        if (changed) {
+            emailVerificationService.sendLink(user, false);
+        }
         return user;
     }
 

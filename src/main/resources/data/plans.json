@@ -1,0 +1,194 @@
+[
+  {
+    "slug": "beginner-full-body",
+    "name": "Beginner Full Body",
+    "summary": "Three full-body gym sessions a week to learn the main lifts and build a strength base.",
+    "description": "Each week you rotate through three different full-body workouts, so every major muscle group is trained three times. Pick weights you could lift two or three more times at the end of each set. When you hit the top of the rep range on every set, add a little weight next session (2.5 kg for upper body, 5 kg for legs). Rest at least one day between sessions.",
+    "goal": "BUILD_STRENGTH",
+    "level": "beginner",
+    "equipment": "Gym: barbell, dumbbells, cables",
+    "weeks": 8,
+    "daysPerWeek": 3,
+    "days": [
+      {
+        "day": 1, "title": "Full Body A", "focus": "Squat, bench press, row", "activity": "STRENGTH", "workoutType": "Weightlifting", "minutes": 50,
+        "exercises": [
+          {"slug": "Barbell_Squat", "sets": 3, "reps": "8-10", "rest": 120},
+          {"slug": "Barbell_Bench_Press_-_Medium_Grip", "sets": 3, "reps": "8-10", "rest": 120},
+          {"slug": "Bent_Over_Barbell_Row", "sets": 3, "reps": "8-10", "rest": 90},
+          {"slug": "Plank", "sets": 3, "reps": "30-45 s", "rest": 60}
+        ]
+      },
+      {
+        "day": 2, "title": "Full Body B", "focus": "Hinge, overhead press, pull-down", "activity": "STRENGTH", "workoutType": "Weightlifting", "minutes": 50,
+        "exercises": [
+          {"slug": "Romanian_Deadlift", "sets": 3, "reps": "8-10", "rest": 120},
+          {"slug": "Standing_Military_Press", "sets": 3, "reps": "8-10", "rest": 90},
+          {"slug": "Wide-Grip_Lat_Pulldown", "sets": 3, "reps": "10-12", "rest": 90},
+          {"slug": "Dumbbell_Lunges", "sets": 3, "reps": "10 each leg", "rest": 90}
+        ]
+      },
+      {
+        "day": 3, "title": "Full Body C", "focus": "Leg press, dumbbell press, cable row", "activity": "STRENGTH", "workoutType": "Weightlifting", "minutes": 50,
+        "exercises": [
+          {"slug": "Leg_Press", "sets": 3, "reps": "10-12", "rest": 90},
+          {"slug": "Dumbbell_Bench_Press", "sets": 3, "reps": "10-12", "rest": 90},
+          {"slug": "Seated_Cable_Rows", "sets": 3, "reps": "10-12", "rest": 90},
+          {"slug": "Side_Lateral_Raise", "sets": 2, "reps": "12-15", "rest": 60},
+          {"slug": "Crunches", "sets": 3, "reps": "15", "rest": 45}
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "home-bodyweight",
+    "name": "Home Bodyweight Starter",
+    "summary": "No equipment needed: three 30-minute sessions a week you can do in your living room.",
+    "description": "A simple plan for getting fit at home. Keep rest short (30 to 60 seconds) to keep your heart rate up. As the moves get easier, add reps, slow the lowering phase down, or add a fourth round. A sturdy chair or step is all you need.",
+    "goal": "STAY_ACTIVE",
+    "level": "beginner",
+    "equipment": "None (a chair or step helps)",
+    "weeks": 6,
+    "daysPerWeek": 3,
+    "days": [
+      {
+        "day": 1, "title": "Push and core", "focus": "Chest, shoulders, triceps, abs", "activity": "STRENGTH", "workoutType": "HIIT", "minutes": 30,
+        "exercises": [
+          {"slug": "Pushups", "sets": 4, "reps": "8-15", "rest": 60},
+          {"slug": "Bench_Dips", "sets": 3, "reps": "10-12", "rest": 60},
+          {"slug": "Plank", "sets": 3, "reps": "30-60 s", "rest": 45},
+          {"slug": "Mountain_Climbers", "sets": 3, "reps": "30 s", "rest": 45}
+        ]
+      },
+      {
+        "day": 2, "title": "Legs and glutes", "focus": "Squats, lunges, bridges", "activity": "STRENGTH", "workoutType": "HIIT", "minutes": 30,
+        "exercises": [
+          {"slug": "Bodyweight_Squat", "sets": 4, "reps": "15-20", "rest": 60},
+          {"slug": "Bodyweight_Walking_Lunge", "sets": 3, "reps": "10 each leg", "rest": 60},
+          {"slug": "Single_Leg_Glute_Bridge", "sets": 3, "reps": "12 each leg", "rest": 45},
+          {"slug": "Step-up_with_Knee_Raise", "sets": 3, "reps": "10 each leg", "rest": 45}
+        ]
+      },
+      {
+        "day": 3, "title": "Full-body conditioning", "focus": "Power, core and cardio", "activity": "STRENGTH", "workoutType": "HIIT", "minutes": 30,
+        "exercises": [
+          {"slug": "Freehand_Jump_Squat", "sets": 3, "reps": "10-12", "rest": 45},
+          {"slug": "Push-Up_Wide", "sets": 3, "reps": "8-12", "rest": 45},
+          {"slug": "Superman", "sets": 3, "reps": "30 s", "rest": 30},
+          {"slug": "Cross-Body_Crunch", "sets": 3, "reps": "15 each side", "rest": 30},
+          {"slug": "Mountain_Climbers", "sets": 3, "reps": "40 s", "rest": 45}
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "push-pull-legs",
+    "name": "Push Pull Legs",
+    "summary": "A classic three-day split for lifters who know the basics and want more size and strength.",
+    "description": "Push day trains chest, shoulders and triceps; pull day trains back and biceps; leg day trains quads, hamstrings, glutes and calves. Start the main lift of each day heavy and the accessories lighter. Log every set so FitTracker can spot your personal records. If you can train six days a week, run the cycle twice.",
+    "goal": "BUILD_STRENGTH",
+    "level": "intermediate",
+    "equipment": "Gym: barbell, dumbbells, cables, pull-up bar",
+    "weeks": 8,
+    "daysPerWeek": 3,
+    "days": [
+      {
+        "day": 1, "title": "Push", "focus": "Chest, shoulders, triceps", "activity": "STRENGTH", "workoutType": "Weightlifting", "minutes": 60,
+        "exercises": [
+          {"slug": "Barbell_Bench_Press_-_Medium_Grip", "sets": 4, "reps": "6-8", "rest": 150},
+          {"slug": "Barbell_Incline_Bench_Press_-_Medium_Grip", "sets": 3, "reps": "8-10", "rest": 120},
+          {"slug": "Dumbbell_Shoulder_Press", "sets": 3, "reps": "8-10", "rest": 90},
+          {"slug": "Side_Lateral_Raise", "sets": 3, "reps": "12-15", "rest": 60},
+          {"slug": "Triceps_Pushdown", "sets": 3, "reps": "10-12", "rest": 60}
+        ]
+      },
+      {
+        "day": 2, "title": "Pull", "focus": "Back, rear shoulders, biceps", "activity": "STRENGTH", "workoutType": "Weightlifting", "minutes": 60,
+        "exercises": [
+          {"slug": "Barbell_Deadlift", "sets": 3, "reps": "5", "rest": 180},
+          {"slug": "Pullups", "sets": 3, "reps": "6-10", "rest": 120},
+          {"slug": "Seated_Cable_Rows", "sets": 3, "reps": "8-10", "rest": 90},
+          {"slug": "Face_Pull", "sets": 3, "reps": "12-15", "rest": 60},
+          {"slug": "Hammer_Curls", "sets": 3, "reps": "10-12", "rest": 60}
+        ]
+      },
+      {
+        "day": 3, "title": "Legs", "focus": "Quads, hamstrings, glutes, calves", "activity": "STRENGTH", "workoutType": "Weightlifting", "minutes": 60,
+        "exercises": [
+          {"slug": "Barbell_Squat", "sets": 4, "reps": "6-8", "rest": 180},
+          {"slug": "Romanian_Deadlift", "sets": 3, "reps": "8-10", "rest": 120},
+          {"slug": "Leg_Press", "sets": 3, "reps": "10-12", "rest": 90},
+          {"slug": "Lying_Leg_Curls", "sets": 3, "reps": "10-12", "rest": 60},
+          {"slug": "Standing_Calf_Raises", "sets": 4, "reps": "12-15", "rest": 60}
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "fat-loss-strength-cardio",
+    "name": "Fat Loss: Strength and Cardio",
+    "summary": "Four sessions a week mixing dumbbell strength work, an easy run and a short HIIT circuit.",
+    "description": "Strength training keeps your muscle while you're eating less; the run and the circuit add calorie burn and fitness. Pair this plan with a Lose Weight goal and the food diary for the best results. The run is easy: you should be able to talk in full sentences.",
+    "goal": "LOSE_WEIGHT",
+    "level": "beginner",
+    "equipment": "Dumbbells, kettlebell, skipping rope",
+    "weeks": 6,
+    "daysPerWeek": 4,
+    "days": [
+      {
+        "day": 1, "title": "Upper body", "focus": "Press, row, shoulders", "activity": "STRENGTH", "workoutType": "Weightlifting", "minutes": 40,
+        "exercises": [
+          {"slug": "Dumbbell_Bench_Press", "sets": 3, "reps": "10-12", "rest": 75},
+          {"slug": "One-Arm_Dumbbell_Row", "sets": 3, "reps": "10-12 each arm", "rest": 75},
+          {"slug": "Dumbbell_Shoulder_Press", "sets": 3, "reps": "10-12", "rest": 75},
+          {"slug": "Pushups", "sets": 2, "reps": "8-15", "rest": 60}
+        ]
+      },
+      {
+        "day": 2, "title": "Easy run", "focus": "Conversational pace", "activity": "RUN", "workoutType": "Running", "minutes": 30,
+        "instructions": "Walk briskly for 5 minutes, then run or jog easily for 20 minutes at a pace where you can still talk. Walk for a minute whenever you need to. Finish with a 5-minute walk."
+      },
+      {
+        "day": 3, "title": "Lower body", "focus": "Squat, lunge, glutes, core", "activity": "STRENGTH", "workoutType": "Weightlifting", "minutes": 40,
+        "exercises": [
+          {"slug": "Goblet_Squat", "sets": 3, "reps": "12", "rest": 75},
+          {"slug": "Dumbbell_Lunges", "sets": 3, "reps": "10 each leg", "rest": 75},
+          {"slug": "Single_Leg_Glute_Bridge", "sets": 3, "reps": "12 each leg", "rest": 60},
+          {"slug": "Plank", "sets": 3, "reps": "45 s", "rest": 45}
+        ]
+      },
+      {
+        "day": 4, "title": "HIIT circuit", "focus": "Four moves, four rounds", "activity": "STRENGTH", "workoutType": "HIIT", "minutes": 25,
+        "instructions": "Do the four moves back to back, rest 90 seconds, and repeat for four rounds.",
+        "exercises": [
+          {"slug": "Freehand_Jump_Squat", "sets": 4, "reps": "12", "rest": 0},
+          {"slug": "Mountain_Climbers", "sets": 4, "reps": "40 s", "rest": 0},
+          {"slug": "Rope_Jumping", "sets": 4, "reps": "60 s", "rest": 0},
+          {"slug": "Pushups", "sets": 4, "reps": "10", "rest": 90}
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "first-5k",
+    "name": "Your First 5K",
+    "summary": "From walking to running 5 km without stopping in nine weeks, three runs a week.",
+    "description": "Each run starts and ends with a 5-minute brisk walk. Week by week the running intervals get longer and the walking breaks get shorter, until you can run for 30 minutes. Record your runs with GPS so you can watch your distance grow. If a week feels too hard, repeat it before moving on; that's normal.",
+    "goal": "RUN_MORE",
+    "level": "beginner",
+    "equipment": "Running shoes",
+    "weeks": 9,
+    "daysPerWeek": 3,
+    "runWeeks": [
+      {"week": 1, "title": "Run 1 min, walk 1.5 min", "minutes": 30, "instructions": "After the warm-up walk, alternate 60 seconds of easy running with 90 seconds of walking, 8 times."},
+      {"week": 2, "title": "Run 1.5 min, walk 2 min", "minutes": 31, "instructions": "After the warm-up walk, alternate 90 seconds of easy running with 2 minutes of walking, 6 times."},
+      {"week": 3, "title": "Run 2 min, walk 2 min", "minutes": 30, "instructions": "After the warm-up walk, alternate 2 minutes of running with 2 minutes of walking, 5 times."},
+      {"week": 4, "title": "Run 3 min, walk 1.5 min", "minutes": 33, "instructions": "After the warm-up walk, alternate 3 minutes of running with 90 seconds of walking, 5 times."},
+      {"week": 5, "title": "Run 5 min, walk 2 min", "minutes": 31, "instructions": "After the warm-up walk, run for 5 minutes then walk for 2 minutes, 3 times."},
+      {"week": 6, "title": "Run 10 min, walk 3 min, run 10 min", "minutes": 33, "instructions": "After the warm-up walk, run for 10 minutes, walk for 3 minutes, then run for another 10 minutes."},
+      {"week": 7, "title": "Run 25 minutes", "minutes": 35, "instructions": "After the warm-up walk, run for 25 minutes without stopping. Slow down as much as you need to keep going."},
+      {"week": 8, "title": "Run 28 minutes", "minutes": 38, "instructions": "After the warm-up walk, run for 28 minutes without stopping, at an easy, steady pace."},
+      {"week": 9, "title": "Run 30 minutes or 5 km", "minutes": 40, "distance": 5000, "instructions": "After the warm-up walk, run for 30 minutes or 5 km without stopping. On your last run, go for the full 5 km."}
+    ]
+  }
+]

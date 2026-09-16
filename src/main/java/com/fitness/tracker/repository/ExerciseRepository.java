@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
 
@@ -32,6 +33,8 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
                           @Param("muscle") String muscle,
                           @Param("equipment") String equipment,
                           Pageable pageable);
+
+    Optional<Exercise> findBySlug(String slug);
 
     @Query("SELECT DISTINCT e.category FROM Exercise e ORDER BY e.category")
     List<String> findCategories();

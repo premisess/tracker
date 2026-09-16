@@ -1,5 +1,6 @@
 package com.fitness.tracker.service;
 
+import com.fitness.tracker.dto.PlanDtos.ActivePlan;
 import com.fitness.tracker.exception.UnauthorizedException;
 import com.fitness.tracker.dto.DashboardSummary;
 import com.fitness.tracker.entity.BmiRecord;
@@ -16,6 +17,7 @@ import com.fitness.tracker.repository.WaterIntakeRepository;
 import com.fitness.tracker.repository.WorkoutRepository;
 import com.fitness.tracker.security.SecurityUtil;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -35,11 +37,15 @@ public class DashboardService {
     private final BmiRecordRepository bmiRecordRepository;
     private final WaterIntakeRepository waterIntakeRepository;
     private final StreakService streakService;
+    private final BadgeService badgeService;
+    private final NutritionService nutritionService;
+    private final PlanService planService;
 
     public DashboardService(UserRepository userRepository, ProfileRepository profileRepository,
                              GoalRepository goalRepository, WorkoutRepository workoutRepository,
                              BmiRecordRepository bmiRecordRepository, WaterIntakeRepository waterIntakeRepository,
-                             StreakService streakService) {
+                             StreakService streakService, BadgeService badgeService,
+                             NutritionService nutritionService, PlanService planService) {
         this.userRepository = userRepository;
         this.profileRepository = profileRepository;
         this.goalRepository = goalRepository;
@@ -47,8 +53,12 @@ public class DashboardService {
         this.bmiRecordRepository = bmiRecordRepository;
         this.waterIntakeRepository = waterIntakeRepository;
         this.streakService = streakService;
+        this.badgeService = badgeService;
+        this.nutritionService = nutritionService;
+        this.planService = planService;
     }
 
+    @Transactional(readOnly = true)
     public DashboardSummary getSummary() {
         User user = getCurrentUser();
 
@@ -76,6 +86,8 @@ public class DashboardService {
         List<BmiRecord> bmiHistory = bmiRecordRepository.findByUserIdOrderByDateDesc(user.getId());
         BmiRecord latestBmi = bmiHistory.isEmpty() ? null : bmiHistory.get(0);
 
+        Optional<ActivePlan> plan = planService.activeFor(user);
+
         String nextStep;
         if (!profileComplete) {
             nextStep = "Complete your profile (age, gender, weight, height) so we can personalize your plan.";
@@ -83,6 +95,8 @@ public class DashboardService {
             nextStep = "Set your first goal to start tracking progress.";
         } else if (workoutCount == 0) {
             nextStep = "Log your first workout to kick off your streak.";
+        } else if (plan.isPresent() && plan.get().nextSession() != null) {
+            nextStep = "Next up in " + plan.get().plan().name() + ": " + plan.get().nextSession().title() + ".";
         } else if (currentStreak == 0) {
             nextStep = "Your streak reset — log a workout today to start a new one.";
         } else {
@@ -102,7 +116,15 @@ public class DashboardService {
                 totalCalories,
                 waterToday,
                 !waterLogs.isEmpty(),
-                longestStreak
+                longestStreak,
+                user.isEmailVerified(),
+                badgeService.earnedCount(user),
+                nutritionService.caloriesEaten(user, LocalDate.now()),
+                nutritionService.targetsFor(user).calories(),
+                plan.map(p -> p.plan().name()).orElse(null),
+                plan.map(p -> p.plan().slug()).orElse(null),
+                plan.map(ActivePlan::nextSession).map(s -> s.title()).orElse(null),
+                plan.map(ActivePlan::progressPercent).orElse(null)
         );
     }
 

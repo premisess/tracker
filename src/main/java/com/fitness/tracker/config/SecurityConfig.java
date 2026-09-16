@@ -72,7 +72,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers("/api/auth/register", "/api/auth/login",
+                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/google",
+                                "/api/auth/providers", "/api/auth/verify-email",
                                 "/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
                         .requestMatchers("/api/nutrition/**").authenticated()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

@@ -2,6 +2,9 @@ package com.fitness.tracker.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -20,6 +23,7 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
+    // Google-only accounts get a random, unguessable hash here; "Forgot password" lets them set a real one.
     @Column(nullable = false)
     private String password;
 
@@ -44,8 +48,32 @@ public class User {
     @Column(name = "route_privacy_meters", nullable = false)
     private Integer routePrivacyMeters = 200;
 
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified;
+
+    // SHA-256 of the emailed verification token; the token itself is never stored.
+    @Column(name = "email_verification_token_hash", length = 64, unique = true)
+    private String emailVerificationTokenHash;
+
+    @Column(name = "email_verification_expires_at")
+    private LocalDateTime emailVerificationExpiresAt;
+
+    // How the account was created. A LOCAL account can still be linked to Google later.
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "auth_provider", nullable = false, length = 10)
+    private AuthProvider authProvider = AuthProvider.LOCAL;
+
+    // Google's stable account id ("sub"), set once the account has signed in with Google.
+    @Column(name = "google_subject", length = 64, unique = true)
+    private String googleSubject;
+
     public enum Role {
         USER, ADMIN
+    }
+
+    public enum AuthProvider {
+        LOCAL, GOOGLE
     }
 
 }
