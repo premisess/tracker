@@ -10,4 +10,6 @@ public interface PlanEnrollmentRepository extends JpaRepository<PlanEnrollment, 
     Optional<PlanEnrollment> findFirstByUserIdAndStatus(Long userId, PlanEnrollment.Status status);
 
     long countByUserIdAndStatus(Long userId, PlanEnrollment.Status status);
+
+    boolean existsByPlanId(Long planId);
 }

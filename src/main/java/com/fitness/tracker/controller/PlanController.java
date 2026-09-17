@@ -1,5 +1,6 @@
 package com.fitness.tracker.controller;
 
+import com.fitness.tracker.dto.CustomPlanRequest;
 import com.fitness.tracker.dto.PlanDtos.ActivePlan;
 import com.fitness.tracker.dto.PlanDtos.PlanDetail;
 import com.fitness.tracker.dto.PlanDtos.PlanSummary;
@@ -42,6 +43,22 @@ public class PlanController {
     @DeleteMapping("/active")
     public ResponseEntity<Void> quit() {
         planService.quit();
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/custom")
+    public ResponseEntity<PlanDetail> createCustom(@Valid @RequestBody CustomPlanRequest request) {
+        return ResponseEntity.ok(planService.createCustom(request));
+    }
+
+    @PutMapping("/custom/{slug}")
+    public ResponseEntity<PlanDetail> updateCustom(@PathVariable String slug, @Valid @RequestBody CustomPlanRequest request) {
+        return ResponseEntity.ok(planService.updateCustom(slug, request));
+    }
+
+    @DeleteMapping("/custom/{slug}")
+    public ResponseEntity<Void> deleteCustom(@PathVariable String slug) {
+        planService.deleteCustom(slug);
         return ResponseEntity.noContent().build();
     }
 

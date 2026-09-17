@@ -1,5 +1,6 @@
 package com.fitness.tracker.service;
 
+import com.fitness.tracker.dto.CustomPlanRequest;
 import com.fitness.tracker.dto.PlanDtos.ActivePlan;
 import com.fitness.tracker.dto.PlanDtos.PlanDetail;
 import com.fitness.tracker.dto.PlanDtos.PlanExercise;
@@ -9,13 +10,17 @@ import com.fitness.tracker.dto.PlanDtos.SessionLog;
 import com.fitness.tracker.dto.PlanSessionRequest;
 import com.fitness.tracker.entity.Exercise;
 import com.fitness.tracker.entity.PlanDay;
+import com.fitness.tracker.entity.PlanDayExercise;
 import com.fitness.tracker.entity.PlanEnrollment;
 import com.fitness.tracker.entity.PlanSessionLog;
 import com.fitness.tracker.entity.User;
 import com.fitness.tracker.entity.Workout;
 import com.fitness.tracker.entity.WorkoutPlan;
+import com.fitness.tracker.enums.WorkoutType;
+import com.fitness.tracker.exception.BadRequestException;
 import com.fitness.tracker.exception.ConflictException;
 import com.fitness.tracker.exception.NotFoundException;
+import com.fitness.tracker.repository.ExerciseRepository;
 import com.fitness.tracker.repository.PlanEnrollmentRepository;
 import com.fitness.tracker.repository.PlanSessionLogRepository;
 import com.fitness.tracker.repository.WorkoutPlanRepository;
@@ -24,53 +29,93 @@ import com.fitness.tracker.security.CurrentUserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Browsing workout plans and following one. Sessions run in order: session n falls in week
- * (n - 1) / daysPerWeek + 1, on day (n - 1) % daysPerWeek + 1 of that week.
+ * Browsing workout plans, building your own, and following one. Sessions run in order: session n falls in
+ * week (n - 1) / daysPerWeek + 1, on day (n - 1) % daysPerWeek + 1 of that week.
  */
 @Service
 @Transactional(readOnly = true)
 public class PlanService {
 
+    private static final String SLUG_SUFFIX_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
+
     private final WorkoutPlanRepository planRepository;
     private final PlanEnrollmentRepository enrollmentRepository;
     private final PlanSessionLogRepository sessionLogRepository;
     private final WorkoutRepository workoutRepository;
+    private final ExerciseRepository exerciseRepository;
     private final CurrentUserService currentUserService;
     private final ExerciseCatalogService exerciseCatalogService;
     private final UltimateGuard ultimateGuard;
+    private final SecureRandom random = new SecureRandom();
 
     public PlanService(WorkoutPlanRepository planRepository, PlanEnrollmentRepository enrollmentRepository,
                        PlanSessionLogRepository sessionLogRepository, WorkoutRepository workoutRepository,
-                       CurrentUserService currentUserService, ExerciseCatalogService exerciseCatalogService,
-                       UltimateGuard ultimateGuard) {
+                       ExerciseRepository exerciseRepository, CurrentUserService currentUserService,
+                       ExerciseCatalogService exerciseCatalogService, UltimateGuard ultimateGuard) {
         this.planRepository = planRepository;
         this.enrollmentRepository = enrollmentRepository;
         this.sessionLogRepository = sessionLogRepository;
         this.workoutRepository = workoutRepository;
+        this.exerciseRepository = exerciseRepository;
         this.currentUserService = currentUserService;
         this.exerciseCatalogService = exerciseCatalogService;
         this.ultimateGuard = ultimateGuard;
     }
 
     public List<PlanSummary> listPlans() {
-        Long activePlanId = activePlanId(currentUserService.get());
-        return planRepository.findAllByOrderByIdAsc().stream()
+        User user = currentUserService.get();
+        Long activePlanId = activePlanId(user);
+        return planRepository.findVisibleTo(user.getId()).stream()
                 .map(plan -> toSummary(plan, plan.getId().equals(activePlanId)))
                 .toList();
     }
 
     public PlanDetail getPlan(String slug) {
-        WorkoutPlan plan = findPlan(slug);
-        boolean active = plan.getId().equals(activePlanId(currentUserService.get()));
-        return new PlanDetail(toSummary(plan, active), plan.getDescription(),
-                plan.getDays().stream().map(this::toSession).toList());
+        User user = currentUserService.get();
+        WorkoutPlan plan = findPlan(slug, user);
+        return toDetail(plan, plan.getId().equals(activePlanId(user)));
+    }
+
+    /** Builds a new plan owned by the user. */
+    @Transactional
+    public PlanDetail createCustom(CustomPlanRequest request) {
+        User user = currentUserService.get();
+        ultimateGuard.require(user, "Building your own workout plans");
+
+        WorkoutPlan plan = new WorkoutPlan();
+        plan.setOwner(user);
+        plan.setCreatedAt(LocalDateTime.now());
+        plan.setSlug(newSlug(request.getName()));
+        applyRequest(plan, request);
+        return toDetail(planRepository.save(plan), false);
+    }
+
+    /** Replaces a custom plan's details and sessions. Plans that have been started keep their history, so they can't be edited. */
+    @Transactional
+    public PlanDetail updateCustom(String slug, CustomPlanRequest request) {
+        User user = currentUserService.get();
+        ultimateGuard.require(user, "Building your own workout plans");
+        WorkoutPlan plan = ownedPlan(slug, user);
+        if (enrollmentRepository.existsByPlanId(plan.getId())) {
+            throw new ConflictException("You've already started this plan, so it can't be changed. Make a copy instead.");
+        }
+        applyRequest(plan, request);
+        return toDetail(planRepository.save(plan), false);
+    }
+
+    /** Deletes a custom plan, including any time the user followed it. Logged workouts stay. */
+    @Transactional
+    public void deleteCustom(String slug) {
+        planRepository.delete(ownedPlan(slug, currentUserService.get()));
     }
 
     /** Starts a plan. Switching from another active plan needs {@code replace}, which quits the old one. */
@@ -78,7 +123,7 @@ public class PlanService {
     public ActivePlan start(String slug, boolean replace) {
         User user = currentUserService.get();
         ultimateGuard.require(user, "Following workout plans");
-        WorkoutPlan plan = findPlan(slug);
+        WorkoutPlan plan = findPlan(slug, user);
 
         Optional<PlanEnrollment> current = enrollmentRepository.findFirstByUserIdAndStatus(user.getId(), PlanEnrollment.Status.ACTIVE);
         if (current.isPresent()) {
@@ -171,6 +216,74 @@ public class PlanService {
                         "Plan " + plan.getSlug() + " has no session for week " + week + ", day " + day));
     }
 
+    /** "My Push Day!" becomes "my-my-push-day-k3x9qp": readable, unique, and never clashing with built-in slugs. */
+    String newSlug(String name) {
+        String base = name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("(^-+|-+$)", "");
+        if (base.length() > 40) {
+            base = base.substring(0, 40).replaceAll("-+$", "");
+        }
+        if (base.isEmpty()) {
+            base = "plan";
+        }
+        String slug;
+        do {
+            StringBuilder suffix = new StringBuilder();
+            for (int i = 0; i < 6; i++) {
+                suffix.append(SLUG_SUFFIX_ALPHABET.charAt(random.nextInt(SLUG_SUFFIX_ALPHABET.length())));
+            }
+            slug = "my-" + base + "-" + suffix;
+        } while (planRepository.existsBySlug(slug));
+        return slug;
+    }
+
+    private void applyRequest(WorkoutPlan plan, CustomPlanRequest request) {
+        plan.setName(request.getName().trim());
+        plan.setSummary(blankToNull(request.getSummary()) != null
+                ? request.getSummary().trim()
+                : request.getDaysPerWeek() + " sessions a week for " + request.getDurationWeeks() + " weeks");
+        plan.setDescription(blankToNull(request.getDescription()));
+        plan.setGoal(request.getGoal());
+        plan.setLevel(request.getLevel());
+        plan.setEquipment(blankToNull(request.getEquipment()) != null ? request.getEquipment().trim() : "Your choice");
+        plan.setDurationWeeks(request.getDurationWeeks());
+        plan.setDaysPerWeek(request.getDaysPerWeek());
+
+        plan.getDays().clear();
+        int dayNumber = 1;
+        for (CustomPlanRequest.Session session : request.getSessions()) {
+            WorkoutType type = WorkoutType.fromLabel(session.getWorkoutType())
+                    .orElseThrow(() -> new BadRequestException("Unknown workout type '" + session.getWorkoutType() + "'"));
+            boolean run = session.getActivity() == PlanDay.Activity.RUN;
+
+            PlanDay day = new PlanDay();
+            day.setPlan(plan);
+            day.setWeekNumber(null);
+            day.setDayNumber(dayNumber++);
+            day.setTitle(session.getTitle().trim());
+            day.setFocus(blankToNull(session.getFocus()));
+            day.setActivity(session.getActivity());
+            day.setWorkoutType(type.getLabel());
+            day.setTargetMinutes(session.getTargetMinutes());
+            day.setTargetDistanceM(run ? session.getTargetDistanceM() : null);
+            day.setInstructions(blankToNull(session.getInstructions()));
+
+            int order = 0;
+            for (CustomPlanRequest.SessionExercise item : session.getExercises() != null ? session.getExercises() : List.<CustomPlanRequest.SessionExercise>of()) {
+                Exercise exercise = exerciseRepository.findById(item.getExerciseId())
+                        .orElseThrow(() -> new BadRequestException("Exercise " + item.getExerciseId() + " doesn't exist"));
+                PlanDayExercise planExercise = new PlanDayExercise();
+                planExercise.setPlanDay(day);
+                planExercise.setExercise(exercise);
+                planExercise.setSortOrder(order++);
+                planExercise.setSets(item.getSets());
+                planExercise.setReps(item.getReps().trim());
+                planExercise.setRestSec(item.getRestSec());
+                day.getExercises().add(planExercise);
+            }
+            plan.getDays().add(day);
+        }
+    }
+
     private ActivePlan toActivePlan(PlanEnrollment enrollment) {
         WorkoutPlan plan = enrollment.getPlan();
         int total = plan.totalSessions();
@@ -203,10 +316,17 @@ public class PlanService {
                 recent);
     }
 
+    private PlanDetail toDetail(WorkoutPlan plan, boolean active) {
+        return new PlanDetail(toSummary(plan, active), plan.getDescription(),
+                plan.getDays().stream().map(this::toSession).toList());
+    }
+
     private PlanSummary toSummary(WorkoutPlan plan, boolean active) {
+        boolean custom = plan.getOwner() != null;
+        boolean editable = custom && (plan.getId() == null || !enrollmentRepository.existsByPlanId(plan.getId()));
         return new PlanSummary(plan.getId(), plan.getSlug(), plan.getName(), plan.getSummary(), plan.getGoal().name(),
                 plan.getLevel(), plan.getEquipment(), plan.getDurationWeeks(), plan.getDaysPerWeek(),
-                plan.totalSessions(), active);
+                plan.totalSessions(), active, custom, editable);
     }
 
     private PlanSession toSession(PlanDay day) {
@@ -226,7 +346,19 @@ public class PlanService {
                 .orElse(null);
     }
 
-    private WorkoutPlan findPlan(String slug) {
-        return planRepository.findBySlug(slug).orElseThrow(() -> new NotFoundException("Workout plan not found"));
+    private WorkoutPlan findPlan(String slug, User user) {
+        return planRepository.findBySlug(slug)
+                .filter(plan -> plan.isVisibleTo(user))
+                .orElseThrow(() -> new NotFoundException("Workout plan not found"));
+    }
+
+    private WorkoutPlan ownedPlan(String slug, User user) {
+        return planRepository.findBySlug(slug)
+                .filter(plan -> plan.getOwner() != null && plan.getOwner().getId().equals(user.getId()))
+                .orElseThrow(() -> new NotFoundException("Custom plan not found"));
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

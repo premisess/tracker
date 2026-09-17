@@ -21,6 +21,9 @@ public interface WorkoutRepository extends JpaRepository<Workout, Long> {
 
     long countByUserId(Long userId);
 
+    @Query("SELECT DISTINCT w.date FROM Workout w WHERE w.user.id = :userId AND w.date IS NOT NULL")
+    List<LocalDate> findWorkoutDates(@Param("userId") Long userId);
+
     long countByUserIdAndSource(Long userId, Workout.ActivitySource source);
 
     @Query("SELECT COALESCE(MAX(w.distanceMeters), 0) FROM Workout w WHERE w.user.id = :userId AND w.distanceMeters IS NOT NULL AND w.type = :type")

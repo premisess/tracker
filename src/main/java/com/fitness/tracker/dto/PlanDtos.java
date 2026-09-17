@@ -10,6 +10,7 @@ public final class PlanDtos {
     private PlanDtos() {
     }
 
+    /** custom is true for plans the user built; editable is true for those they haven't started yet. */
     public record PlanSummary(
             Long id,
             String slug,
@@ -21,7 +22,9 @@ public final class PlanDtos {
             int durationWeeks,
             int daysPerWeek,
             int totalSessions,
-            boolean active) {
+            boolean active,
+            boolean custom,
+            boolean editable) {
     }
 
     public record PlanExercise(
