@@ -44,16 +44,19 @@ public class PlanService {
     private final WorkoutRepository workoutRepository;
     private final CurrentUserService currentUserService;
     private final ExerciseCatalogService exerciseCatalogService;
+    private final UltimateGuard ultimateGuard;
 
     public PlanService(WorkoutPlanRepository planRepository, PlanEnrollmentRepository enrollmentRepository,
                        PlanSessionLogRepository sessionLogRepository, WorkoutRepository workoutRepository,
-                       CurrentUserService currentUserService, ExerciseCatalogService exerciseCatalogService) {
+                       CurrentUserService currentUserService, ExerciseCatalogService exerciseCatalogService,
+                       UltimateGuard ultimateGuard) {
         this.planRepository = planRepository;
         this.enrollmentRepository = enrollmentRepository;
         this.sessionLogRepository = sessionLogRepository;
         this.workoutRepository = workoutRepository;
         this.currentUserService = currentUserService;
         this.exerciseCatalogService = exerciseCatalogService;
+        this.ultimateGuard = ultimateGuard;
     }
 
     public List<PlanSummary> listPlans() {
@@ -74,6 +77,7 @@ public class PlanService {
     @Transactional
     public ActivePlan start(String slug, boolean replace) {
         User user = currentUserService.get();
+        ultimateGuard.require(user, "Following workout plans");
         WorkoutPlan plan = findPlan(slug);
 
         Optional<PlanEnrollment> current = enrollmentRepository.findFirstByUserIdAndStatus(user.getId(), PlanEnrollment.Status.ACTIVE);
@@ -110,6 +114,7 @@ public class PlanService {
     @Transactional
     public ActivePlan logSession(PlanSessionRequest request) {
         User user = currentUserService.get();
+        ultimateGuard.require(user, "Following workout plans");
         PlanEnrollment enrollment = enrollmentRepository.findFirstByUserIdAndStatus(user.getId(), PlanEnrollment.Status.ACTIVE)
                 .orElseThrow(() -> new NotFoundException("You aren't following a workout plan right now"));
 

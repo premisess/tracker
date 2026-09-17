@@ -12,6 +12,7 @@ public class TrackerApplication {
         SpringApplication.run(TrackerApplication.class, args);
     }
 
+
     @Bean
     public RestTemplate restTemplate() {
         return new RestTemplate();

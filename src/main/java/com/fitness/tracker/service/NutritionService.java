@@ -55,11 +55,12 @@ public class NutritionService {
     private final WorkoutRepository workoutRepository;
     private final WaterIntakeRepository waterIntakeRepository;
     private final CurrentUserService currentUserService;
+    private final UltimateGuard ultimateGuard;
 
     public NutritionService(FoodRepository foodRepository, FoodLogEntryRepository foodLogEntryRepository,
                             ProfileRepository profileRepository, GoalRepository goalRepository,
                             WorkoutRepository workoutRepository, WaterIntakeRepository waterIntakeRepository,
-                            CurrentUserService currentUserService) {
+                            CurrentUserService currentUserService, UltimateGuard ultimateGuard) {
         this.foodRepository = foodRepository;
         this.foodLogEntryRepository = foodLogEntryRepository;
         this.profileRepository = profileRepository;
@@ -67,6 +68,7 @@ public class NutritionService {
         this.workoutRepository = workoutRepository;
         this.waterIntakeRepository = waterIntakeRepository;
         this.currentUserService = currentUserService;
+        this.ultimateGuard = ultimateGuard;
     }
 
     /** Foods matching the search; with no search term, the foods the user logged most recently. */
@@ -95,7 +97,9 @@ public class NutritionService {
 
     @Transactional
     public FoodResponse createFood(FoodRequest request) {
-        return toFoodResponse(foodRepository.save(newFood(request, currentUserService.get())));
+        User user = currentUserService.get();
+        ultimateGuard.require(user, "Saving your own foods");
+        return toFoodResponse(foodRepository.save(newFood(request, user)));
     }
 
     /** Deletes one of the user's own foods. Diary entries keep their copied name and numbers. */
@@ -162,6 +166,7 @@ public class NutritionService {
         } else {
             food = newFood(request.getCustomFood(), user);
             if (Boolean.TRUE.equals(request.getSaveCustomFood())) {
+                ultimateGuard.require(user, "Saving your own foods");
                 food = foodRepository.save(food);
             }
         }
@@ -209,6 +214,9 @@ public class NutritionService {
     public NutritionHistoryResponse history(int days) {
         User user = currentUserService.get();
         int span = Math.max(7, Math.min(days, 90));
+        if (span > 7) {
+            ultimateGuard.require(user, "Nutrition history beyond 7 days");
+        }
         LocalDate to = LocalDate.now();
         LocalDate from = to.minusDays(span - 1L);
 

@@ -75,6 +75,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/google",
                                 "/api/auth/providers", "/api/auth/verify-email",
                                 "/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
+                        // ClickPesa calls this; payments are verified against its API, not the request body.
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/billing/clickpesa/webhook").permitAll()
                         .requestMatchers("/api/nutrition/**").authenticated()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()

@@ -68,6 +68,10 @@ public class User {
     @Column(name = "google_subject", length = 64, unique = true)
     private String googleSubject;
 
+    // Paid FitTracker Ultimate access lasts until this moment; null or in the past means the free tier.
+    @Column(name = "ultimate_until")
+    private LocalDateTime ultimateUntil;
+
     public enum Role {
         USER, ADMIN
     }
