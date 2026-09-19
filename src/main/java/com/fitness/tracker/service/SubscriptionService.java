@@ -48,18 +48,21 @@ public class SubscriptionService {
     private final CurrentUserService currentUserService;
     private final int monthlyPriceTzs;
     private final int yearlyPriceTzs;
+    private final boolean previewMode;
     private final SecureRandom random = new SecureRandom();
 
     public SubscriptionService(PaymentRepository paymentRepository, UserRepository userRepository,
                                ClickPesaClient clickPesa, CurrentUserService currentUserService,
                                @Value("${app.billing.monthly-price-tzs}") int monthlyPriceTzs,
-                               @Value("${app.billing.yearly-price-tzs}") int yearlyPriceTzs) {
+                               @Value("${app.billing.yearly-price-tzs}") int yearlyPriceTzs,
+                               @Value("${app.billing.preview-mode:false}") boolean previewMode) {
         this.paymentRepository = paymentRepository;
         this.userRepository = userRepository;
         this.clickPesa = clickPesa;
         this.currentUserService = currentUserService;
         this.monthlyPriceTzs = monthlyPriceTzs;
         this.yearlyPriceTzs = yearlyPriceTzs;
+        this.previewMode = previewMode;
     }
 
     @Transactional(readOnly = true)
@@ -68,7 +71,7 @@ public class SubscriptionService {
         return new BillingStatus(
                 UltimateGuard.hasUltimate(user),
                 user.getUltimateUntil(),
-                clickPesa.isConfigured(),
+                clickPesa.isConfigured() || previewMode,
                 List.of(new Price("MONTHLY", monthlyPriceTzs), new Price("YEARLY", yearlyPriceTzs)),
                 paymentRepository.findTop10ByUserIdOrderByCreatedAtDesc(user.getId()).stream().map(this::toView).toList());
     }
@@ -77,13 +80,13 @@ public class SubscriptionService {
     @Transactional(noRollbackFor = ApiException.class)
     public PaymentView checkout(CheckoutRequest request) {
         User user = currentUserService.get();
-        if (!clickPesa.isConfigured()) {
-            throw new ApiException(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
-                    "Mobile money payments aren't set up on this server yet.");
-        }
         String phone = normalizePhone(request.getPhoneNumber())
                 .orElseThrow(() -> new BadRequestException(
                         "Enter a Tanzanian mobile money number, for example 0712 345 678."));
+        if (!clickPesa.isConfigured() && !previewMode) {
+            throw new ApiException(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
+                    "Mobile money payments aren't set up on this server yet.");
+        }
         if (paymentRepository.existsByUserIdAndStatusAndCreatedAtAfter(user.getId(), Payment.Status.PENDING,
                 LocalDateTime.now().minusMinutes(PENDING_LOCK_MINUTES))) {
             throw new ConflictException("A payment is already waiting for your PIN. Check your phone, or try again in a couple of minutes.");
@@ -97,6 +100,14 @@ public class SubscriptionService {
         payment.setPhoneNumber(phone);
         payment.setStatus(Payment.Status.PENDING);
         payment.setCreatedAt(LocalDateTime.now());
+
+        // Preview mode simulates the PIN prompt so the checkout flow can be seen before ClickPesa keys exist.
+        if (!clickPesa.isConfigured()) {
+            payment.setChannel("M-PESA");
+            payment.setMessage("Preview payment - no real money is moved until ClickPesa is configured.");
+            return toView(paymentRepository.save(payment));
+        }
+
         paymentRepository.saveAndFlush(payment);
 
         try {
