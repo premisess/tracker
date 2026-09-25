@@ -47,7 +47,11 @@ services:
       - uploads:/app/uploads
 
   web:
-    build: ${FRONTEND_PATH:?set FRONTEND_PATH in deploy/.env}
+    build:
+      context: ${FRONTEND_PATH:?set FRONTEND_PATH in deploy/.env}
+      args:
+        # Shown on the privacy page for data questions.
+        VITE_CONTACT_EMAIL: ${CONTACT_EMAIL:-}
     restart: unless-stopped
     depends_on:
       - backend

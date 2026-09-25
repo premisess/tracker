@@ -25,9 +25,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @Service
 public class AccountService {
+
+    private static final Logger log = LoggerFactory.getLogger(AccountService.class);
 
     private final UserRepository userRepository;
     private final ProfileRepository profileRepository;
@@ -134,7 +143,10 @@ public class AccountService {
         goalRepository.deleteAll(goalRepository.findByUserId(user.getId()));
         bmiRecordRepository.deleteAll(bmiRecordRepository.findByUserIdOrderByDateDesc(user.getId()));
         waterIntakeRepository.deleteAll(waterIntakeRepository.findByUserIdOrderByDateDesc(user.getId()));
-        profileRepository.findByUserId(user.getId()).ifPresent(profileRepository::delete);
+        profileRepository.findByUserId(user.getId()).ifPresent(profile -> {
+            deleteProfilePicture(profile.getProfilePic());
+            profileRepository.delete(profile);
+        });
         userRepository.delete(user);
 
         SecurityContextHolder.clearContext();
@@ -152,5 +164,22 @@ public class AccountService {
         String email = SecurityUtil.getCurrentUserEmail();
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UnauthorizedException("Your session has expired. Please sign in again."));
+    }
+
+    /** Removes the uploaded photo file too, so nothing of a deleted account stays on disk. */
+    private void deleteProfilePicture(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            return;
+        }
+        Path uploadsDir = Paths.get("uploads").toAbsolutePath().normalize();
+        Path file = uploadsDir.resolve(fileName).normalize();
+        if (!file.startsWith(uploadsDir)) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(file);
+        } catch (IOException e) {
+            log.warn("Could not delete profile picture {}", file, e);
+        }
     }
 }
