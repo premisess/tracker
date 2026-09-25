@@ -90,17 +90,17 @@ public class DashboardService {
 
         String nextStep;
         if (!profileComplete) {
-            nextStep = "Complete your profile (age, gender, weight, height) so we can personalize your plan.";
+            nextStep = "Complete your profile with your age, gender, weight and height so we can personalize your plan.";
         } else if (goals.isEmpty()) {
             nextStep = "Set your first goal to start tracking progress.";
         } else if (workoutCount == 0) {
             nextStep = "Log your first workout to kick off your streak.";
         } else if (plan.isPresent() && plan.get().nextSession() != null) {
-            nextStep = "Next up in " + plan.get().plan().name() + ": " + plan.get().nextSession().title() + ".";
+            nextStep = "Your next session in " + plan.get().plan().name() + " is " + plan.get().nextSession().title() + ".";
         } else if (currentStreak == 0) {
-            nextStep = "Your streak reset — log a workout today to start a new one.";
+            nextStep = "Your streak reset. Log a workout today to start a new one.";
         } else {
-            nextStep = "You're on a " + currentStreak + "-day streak — keep it going!";
+            nextStep = "You're on a " + currentStreak + " day streak. Keep it going!";
         }
 
         return new DashboardSummary(
