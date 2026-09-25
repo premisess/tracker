@@ -4,6 +4,7 @@ import com.fitness.tracker.entity.Goal;
 import com.fitness.tracker.entity.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -14,9 +15,15 @@ public class NotificationService {
     private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
 
     private final JavaMailSender mailSender;
+    private final String from;
+    private final String replyTo;
 
-    public NotificationService(JavaMailSender mailSender) {
+    public NotificationService(JavaMailSender mailSender,
+                               @Value("${spring.mail.username}") String from,
+                               @Value("${app.contact-email}") String replyTo) {
         this.mailSender = mailSender;
+        this.from = from;
+        this.replyTo = replyTo;
     }
 
     public void sendWelcomeEmail(User user) {
@@ -54,9 +61,12 @@ public class NotificationService {
     private void send(String to, String subject, String body) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom("FitTracker <" + from + ">");
+            // Replies from users land in the FitTracker inbox.
+            message.setReplyTo(replyTo);
             message.setTo(to);
             message.setSubject(subject);
-            message.setText(body);
+            message.setText(body + "\n\nQuestions? Just reply to this email.");
             mailSender.send(message);
         } catch (Exception e) {
             log.warn("Could not send \"{}\" email: {}", subject, e.getMessage());

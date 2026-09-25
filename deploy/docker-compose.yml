@@ -42,6 +42,7 @@ services:
       APP_CORS_ORIGINS: https://${SITE_ADDRESS}
       SESSION_COOKIE_SECURE: "true"
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      CONTACT_EMAIL: ${CONTACT_EMAIL:-joglows97@gmail.com}
     volumes:
       # Profile pictures; without a volume they'd vanish on every redeploy.
       - uploads:/app/uploads
@@ -50,8 +51,9 @@ services:
     build:
       context: ${FRONTEND_PATH:?set FRONTEND_PATH in deploy/.env}
       args:
-        # Shown on the privacy page for data questions.
-        VITE_CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+        # Shown on the landing page's About section and the privacy page.
+        VITE_CONTACT_EMAIL: ${CONTACT_EMAIL:-joglows97@gmail.com}
+        VITE_CONTACT_PHONE: ${CONTACT_PHONE:-+255623413993}
     restart: unless-stopped
     depends_on:
       - backend
