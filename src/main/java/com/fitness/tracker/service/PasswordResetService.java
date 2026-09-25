@@ -3,8 +3,6 @@ package com.fitness.tracker.service;
 import com.fitness.tracker.entity.User;
 import com.fitness.tracker.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -16,14 +14,14 @@ import java.util.UUID;
 public class PasswordResetService {
 
     private final UserRepository userRepository;
-    private final JavaMailSender mailSender;
+    private final NotificationService notificationService;
     private final PasswordEncoder passwordEncoder;
     private final String frontendUrl;
 
-    public PasswordResetService(UserRepository userRepository, JavaMailSender mailSender, PasswordEncoder passwordEncoder,
+    public PasswordResetService(UserRepository userRepository, NotificationService notificationService, PasswordEncoder passwordEncoder,
                                 @Value("${app.frontend-url}") String frontendUrl) {
         this.userRepository = userRepository;
-        this.mailSender = mailSender;
+        this.notificationService = notificationService;
         this.passwordEncoder = passwordEncoder;
         this.frontendUrl = frontendUrl.endsWith("/") ? frontendUrl.substring(0, frontendUrl.length() - 1) : frontendUrl;
     }
@@ -38,21 +36,7 @@ public class PasswordResetService {
         user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(30));
         userRepository.save(user);
 
-        String resetLink = frontendUrl + "/reset-password?token=" + token;
-
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(email);
-        message.setSubject("FitTracker - Password Reset Request");
-        message.setText(
-                "Hello " + user.getName() + ",\n\n" +
-                        "You requested to reset your password.\n\n" +
-                        "Click the link below to reset it (valid for 30 minutes):\n" +
-                        resetLink + "\n\n" +
-                        "If you did not request this, ignore this email.\n\n" +
-                        "FitTracker Team"
-        );
-
-        mailSender.send(message);
+        notificationService.sendPasswordResetEmail(user, frontendUrl + "/reset-password?token=" + token);
     }
 
     public boolean resetPassword(String token, String newPassword) {

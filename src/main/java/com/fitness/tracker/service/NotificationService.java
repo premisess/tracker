@@ -57,17 +57,31 @@ public class NotificationService {
                         "FitTracker Team");
     }
 
+    /** Unlike the others, a failed reset email is reported to the caller instead of being logged and skipped. */
+    public void sendPasswordResetEmail(User user, String link) {
+        mailSender.send(message(user.getEmail(), "FitTracker password reset",
+                "Hi " + user.getName() + ",\n\n" +
+                        "You asked to reset your password. Open this link to choose a new one. It works for 30 minutes.\n" +
+                        link + "\n\n" +
+                        "If you didn't ask for this, you can ignore this email and your password stays the same.\n\n" +
+                        "FitTracker Team"));
+    }
+
+    private SimpleMailMessage message(String to, String subject, String body) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("FitTracker <" + from + ">");
+        // Replies from users land in the FitTracker inbox.
+        message.setReplyTo(replyTo);
+        message.setTo(to);
+        message.setSubject(subject);
+        message.setText(body + "\n\nQuestions? Just reply to this email.");
+        return message;
+    }
+
     // Best-effort: a notification failure should never break the request that triggered it.
     private void send(String to, String subject, String body) {
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("FitTracker <" + from + ">");
-            // Replies from users land in the FitTracker inbox.
-            message.setReplyTo(replyTo);
-            message.setTo(to);
-            message.setSubject(subject);
-            message.setText(body + "\n\nQuestions? Just reply to this email.");
-            mailSender.send(message);
+            mailSender.send(message(to, subject, body));
         } catch (Exception e) {
             log.warn("Could not send \"{}\" email: {}", subject, e.getMessage());
         }
