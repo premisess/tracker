@@ -42,12 +42,6 @@ services:
       APP_CORS_ORIGINS: https://${SITE_ADDRESS}
       SESSION_COOKIE_SECURE: "true"
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      CLICKPESA_CLIENT_ID: ${CLICKPESA_CLIENT_ID:-}
-      CLICKPESA_API_KEY: ${CLICKPESA_API_KEY:-}
-      CLICKPESA_CHECKSUM_KEY: ${CLICKPESA_CHECKSUM_KEY:-}
-      ULTIMATE_MONTHLY_TZS: ${ULTIMATE_MONTHLY_TZS:-10000}
-      ULTIMATE_YEARLY_TZS: ${ULTIMATE_YEARLY_TZS:-100000}
-      BILLING_PREVIEW_MODE: ${BILLING_PREVIEW_MODE:-false}
     volumes:
       # Profile pictures; without a volume they'd vanish on every redeploy.
       - uploads:/app/uploads

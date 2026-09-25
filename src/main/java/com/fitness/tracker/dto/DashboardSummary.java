@@ -32,6 +32,4 @@ public class DashboardSummary {
     private String activePlanSlug;
     private String nextPlanSession;
     private Integer planProgressPercent;
-    private boolean ultimate;
-    private java.time.LocalDateTime ultimateUntil;
 }

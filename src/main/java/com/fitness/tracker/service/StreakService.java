@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Workout streaks: consecutive days with at least one workout. A frozen day (Ultimate) bridges a gap
+ * Workout streaks: consecutive days with at least one workout. A frozen day bridges a gap
  * without adding to the count. Today never breaks a streak, since the day isn't over yet.
  */
 @Service
@@ -34,14 +34,12 @@ public class StreakService {
     private final WorkoutRepository workoutRepository;
     private final StreakFreezeRepository streakFreezeRepository;
     private final CurrentUserService currentUserService;
-    private final UltimateGuard ultimateGuard;
 
     public StreakService(WorkoutRepository workoutRepository, StreakFreezeRepository streakFreezeRepository,
-                         CurrentUserService currentUserService, UltimateGuard ultimateGuard) {
+                         CurrentUserService currentUserService) {
         this.workoutRepository = workoutRepository;
         this.streakFreezeRepository = streakFreezeRepository;
         this.currentUserService = currentUserService;
-        this.ultimateGuard = ultimateGuard;
     }
 
     public int getCurrentStreak(Long userId) {
@@ -61,7 +59,6 @@ public class StreakService {
     @Transactional
     public StreakStatus freeze(LocalDate date) {
         User user = currentUserService.get();
-        ultimateGuard.require(user, "Streak freezes");
 
         LocalDate today = LocalDate.now();
         if (!date.isBefore(today) || date.isBefore(today.minusDays(FREEZE_WINDOW_DAYS))) {
@@ -90,7 +87,6 @@ public class StreakService {
         LocalDate today = LocalDate.now();
         Set<LocalDate> active = workoutDates(user.getId());
         Set<LocalDate> frozen = frozenDates(user.getId());
-        boolean ultimate = UltimateGuard.hasUltimate(user);
 
         // Only days after the first workout can be frozen; before that there was no streak to protect.
         List<LocalDate> freezable = new ArrayList<>();
@@ -111,9 +107,8 @@ public class StreakService {
         return new StreakStatus(
                 currentStreak(active, frozen, today),
                 longestStreak(active, frozen),
-                ultimate,
                 FREEZES_PER_MONTH,
-                ultimate ? (int) Math.max(0, FREEZES_PER_MONTH - freezesUsedThisMonth(user)) : 0,
+                (int) Math.max(0, FREEZES_PER_MONTH - freezesUsedThisMonth(user)),
                 freezable,
                 recent);
     }

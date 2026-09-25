@@ -54,13 +54,12 @@ public class PlanService {
     private final ExerciseRepository exerciseRepository;
     private final CurrentUserService currentUserService;
     private final ExerciseCatalogService exerciseCatalogService;
-    private final UltimateGuard ultimateGuard;
     private final SecureRandom random = new SecureRandom();
 
     public PlanService(WorkoutPlanRepository planRepository, PlanEnrollmentRepository enrollmentRepository,
                        PlanSessionLogRepository sessionLogRepository, WorkoutRepository workoutRepository,
                        ExerciseRepository exerciseRepository, CurrentUserService currentUserService,
-                       ExerciseCatalogService exerciseCatalogService, UltimateGuard ultimateGuard) {
+                       ExerciseCatalogService exerciseCatalogService) {
         this.planRepository = planRepository;
         this.enrollmentRepository = enrollmentRepository;
         this.sessionLogRepository = sessionLogRepository;
@@ -68,7 +67,6 @@ public class PlanService {
         this.exerciseRepository = exerciseRepository;
         this.currentUserService = currentUserService;
         this.exerciseCatalogService = exerciseCatalogService;
-        this.ultimateGuard = ultimateGuard;
     }
 
     public List<PlanSummary> listPlans() {
@@ -89,7 +87,6 @@ public class PlanService {
     @Transactional
     public PlanDetail createCustom(CustomPlanRequest request) {
         User user = currentUserService.get();
-        ultimateGuard.require(user, "Building your own workout plans");
 
         WorkoutPlan plan = new WorkoutPlan();
         plan.setOwner(user);
@@ -103,7 +100,6 @@ public class PlanService {
     @Transactional
     public PlanDetail updateCustom(String slug, CustomPlanRequest request) {
         User user = currentUserService.get();
-        ultimateGuard.require(user, "Building your own workout plans");
         WorkoutPlan plan = ownedPlan(slug, user);
         if (enrollmentRepository.existsByPlanId(plan.getId())) {
             throw new ConflictException("You've already started this plan, so it can't be changed. Make a copy instead.");
@@ -122,7 +118,6 @@ public class PlanService {
     @Transactional
     public ActivePlan start(String slug, boolean replace) {
         User user = currentUserService.get();
-        ultimateGuard.require(user, "Following workout plans");
         WorkoutPlan plan = findPlan(slug, user);
 
         Optional<PlanEnrollment> current = enrollmentRepository.findFirstByUserIdAndStatus(user.getId(), PlanEnrollment.Status.ACTIVE);
@@ -159,7 +154,6 @@ public class PlanService {
     @Transactional
     public ActivePlan logSession(PlanSessionRequest request) {
         User user = currentUserService.get();
-        ultimateGuard.require(user, "Following workout plans");
         PlanEnrollment enrollment = enrollmentRepository.findFirstByUserIdAndStatus(user.getId(), PlanEnrollment.Status.ACTIVE)
                 .orElseThrow(() -> new NotFoundException("You aren't following a workout plan right now"));
 

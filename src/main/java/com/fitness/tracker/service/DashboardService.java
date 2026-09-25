@@ -124,9 +124,7 @@ public class DashboardService {
                 plan.map(p -> p.plan().name()).orElse(null),
                 plan.map(p -> p.plan().slug()).orElse(null),
                 plan.map(ActivePlan::nextSession).map(s -> s.title()).orElse(null),
-                plan.map(ActivePlan::progressPercent).orElse(null),
-                UltimateGuard.hasUltimate(user),
-                user.getUltimateUntil()
+                plan.map(ActivePlan::progressPercent).orElse(null)
         );
     }
 

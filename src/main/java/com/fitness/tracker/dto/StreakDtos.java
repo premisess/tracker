@@ -18,7 +18,6 @@ public final class StreakDtos {
     public record StreakStatus(
             int currentStreak,
             int longestStreak,
-            boolean ultimate,
             int freezesPerMonth,
             int freezesLeft,
             List<LocalDate> freezableDates,
