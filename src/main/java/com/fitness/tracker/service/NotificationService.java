@@ -57,6 +57,15 @@ public class NotificationService {
                         "FitTracker Team");
     }
 
+    public void sendFriendInvite(String inviterName, String email, String signUpLink) {
+        send(email, inviterName + " invited you to FitTracker",
+                "Hi,\n\n" +
+                        inviterName + " wants to train with you on FitTracker, a free app for workouts, runs, meals, water and sleep.\n\n" +
+                        "Create your free account with the link below, then add them as a friend.\n" +
+                        signUpLink + "\n\n" +
+                        "FitTracker Team");
+    }
+
     /** Unlike the others, a failed reset email is reported to the caller instead of being logged and skipped. */
     public void sendPasswordResetEmail(User user, String link) {
         mailSender.send(message(user.getEmail(), "FitTracker password reset",
