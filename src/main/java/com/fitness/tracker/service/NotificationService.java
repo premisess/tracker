@@ -57,6 +57,24 @@ public class NotificationService {
                         "FitTracker Team");
     }
 
+    /** Tells the team about new feedback. Replying to this email goes straight to the user. */
+    public void sendFeedbackNotice(String userName, String userEmail, String kind, Integer rating, String message) {
+        try {
+            SimpleMailMessage notice = new SimpleMailMessage();
+            notice.setFrom("FitTracker <" + from + ">");
+            notice.setReplyTo(userEmail);
+            notice.setTo(replyTo);
+            notice.setSubject("New " + kind.toLowerCase() + " from " + userName);
+            notice.setText(userName + " (" + userEmail + ") sent " + kind.toLowerCase()
+                    + (rating != null ? " with a " + rating + " star rating" : "") + ".\n\n"
+                    + message + "\n\n"
+                    + "Answer it in the admin dashboard, or reply to this email to write to them directly.");
+            mailSender.send(notice);
+        } catch (Exception e) {
+            log.warn("Could not send feedback notice: {}", e.getMessage());
+        }
+    }
+
     public void sendFriendInvite(String inviterName, String email, String signUpLink) {
         send(email, inviterName + " invited you to FitTracker",
                 "Hi,\n\n" +
