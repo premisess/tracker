@@ -5,7 +5,8 @@
 # Let's Encrypt automatically. HTTPS is required: browsers only allow GPS on secure pages.
 #
 #   1. Put this repo and fitness-tracker-ui on the server, side by side.
-#   2. Point your domain's DNS at the server and open ports 80 and 443.
+#   2. Point your domain's DNS at the server and open ports 80 and 443. For a free DuckDNS
+#      name, set DUCKDNS_DOMAIN and DUCKDNS_TOKEN in deploy/.env and the duckdns service does it.
 #   3. cp deploy/.env.example deploy/.env   and fill it in.
 #   4. docker compose --env-file deploy/.env -f deploy/docker-compose.yml up -d --build
 
@@ -68,6 +69,27 @@ services:
       # Caddy's certificates; keep them so it doesn't re-request on every restart.
       - caddy-data:/data
       - caddy-config:/config
+
+  # Keeps a free DuckDNS name (yourname.duckdns.org) pointed at this server, even if its public IP
+  # changes. Leaving DUCKDNS_TOKEN empty turns it off. An empty ip= makes DuckDNS use the IP the
+  # request comes from, which is this server.
+  duckdns:
+    image: curlimages/curl:8.10.1
+    restart: unless-stopped
+    environment:
+      DUCKDNS_DOMAIN: ${DUCKDNS_DOMAIN:-}
+      DUCKDNS_TOKEN: ${DUCKDNS_TOKEN:-}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        if [ -z "$$DUCKDNS_TOKEN" ] || [ -z "$$DUCKDNS_DOMAIN" ]; then
+          echo "DuckDNS is off: set DUCKDNS_DOMAIN and DUCKDNS_TOKEN in deploy/.env to turn it on."
+          exec sleep 2147483647
+        fi
+        while true; do
+          echo "$$(date -u) DuckDNS update for $$DUCKDNS_DOMAIN: $$(curl -fsS "https://www.duckdns.org/update?domains=$$DUCKDNS_DOMAIN&token=$$DUCKDNS_TOKEN&ip=" || echo failed)"
+          sleep 300
+        done
 
 volumes:
   db-data:
