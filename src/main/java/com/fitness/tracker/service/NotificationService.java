@@ -5,8 +5,6 @@ import com.fitness.tracker.entity.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -14,15 +12,11 @@ public class NotificationService {
 
     private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
 
-    private final JavaMailSender mailSender;
-    private final String from;
+    private final MailTransport mail;
     private final String replyTo;
 
-    public NotificationService(JavaMailSender mailSender,
-                               @Value("${spring.mail.username}") String from,
-                               @Value("${app.contact-email}") String replyTo) {
-        this.mailSender = mailSender;
-        this.from = from;
+    public NotificationService(MailTransport mail, @Value("${app.contact-email}") String replyTo) {
+        this.mail = mail;
         this.replyTo = replyTo;
     }
 
@@ -60,16 +54,11 @@ public class NotificationService {
     /** Tells the team about new feedback. Replying to this email goes straight to the user. */
     public void sendFeedbackNotice(String userName, String userEmail, String kind, Integer rating, String message) {
         try {
-            SimpleMailMessage notice = new SimpleMailMessage();
-            notice.setFrom("FitTracker <" + from + ">");
-            notice.setReplyTo(userEmail);
-            notice.setTo(replyTo);
-            notice.setSubject("New " + kind.toLowerCase() + " from " + userName);
-            notice.setText(userName + " (" + userEmail + ") sent " + kind.toLowerCase()
-                    + (rating != null ? " with a " + rating + " star rating" : "") + ".\n\n"
-                    + message + "\n\n"
-                    + "Answer it in the admin dashboard, or reply to this email to write to them directly.");
-            mailSender.send(notice);
+            mail.send(replyTo, userEmail, "New " + kind.toLowerCase() + " from " + userName,
+                    userName + " (" + userEmail + ") sent " + kind.toLowerCase()
+                            + (rating != null ? " with a " + rating + " star rating" : "") + ".\n\n"
+                            + message + "\n\n"
+                            + "Answer it in the admin dashboard, or reply to this email to write to them directly.");
         } catch (Exception e) {
             log.warn("Could not send feedback notice: {}", e.getMessage());
         }
@@ -86,7 +75,7 @@ public class NotificationService {
 
     /** Unlike the others, a failed reset email is reported to the caller instead of being logged and skipped. */
     public void sendPasswordResetEmail(User user, String link) {
-        mailSender.send(message(user.getEmail(), "FitTracker password reset",
+        mail.send(user.getEmail(), replyTo, "FitTracker password reset", withFooter(
                 "Hi " + user.getName() + ",\n\n" +
                         "You asked to reset your password. Open this link to choose a new one. It works for 30 minutes.\n" +
                         link + "\n\n" +
@@ -94,21 +83,15 @@ public class NotificationService {
                         "FitTracker Team"));
     }
 
-    private SimpleMailMessage message(String to, String subject, String body) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom("FitTracker <" + from + ">");
-        // Replies from users land in the FitTracker inbox.
-        message.setReplyTo(replyTo);
-        message.setTo(to);
-        message.setSubject(subject);
-        message.setText(body + "\n\nQuestions? Just reply to this email.");
-        return message;
+    // Replies from users land in the FitTracker inbox.
+    private static String withFooter(String body) {
+        return body + "\n\nQuestions? Just reply to this email.";
     }
 
     // Best-effort: a notification failure should never break the request that triggered it.
     private void send(String to, String subject, String body) {
         try {
-            mailSender.send(message(to, subject, body));
+            mail.send(to, replyTo, subject, withFooter(body));
         } catch (Exception e) {
             log.warn("Could not send \"{}\" email: {}", subject, e.getMessage());
         }

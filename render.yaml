@@ -1,0 +1,61 @@
+# Render Blueprint: the API (this repo, Docker) and the website (fitness-tracker-ui, static site).
+# Render → New → Blueprint → pick this repo. It asks for the values marked sync: false.
+#
+# The website forwards /api/* to the API, so both are one address in the browser: the login
+# cookie stays first-party and no cross-site settings are needed.
+# If Render gives either service a different address than the names below (the name was taken),
+# update APP_FRONTEND_URL / APP_CORS_ORIGINS and the /api/* rewrite to match.
+services:
+  - type: web
+    name: fittracker-api-tz
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/auth/providers
+    envVars:
+      # Aiven MySQL: jdbc:mysql://HOST:PORT/defaultdb?sslMode=REQUIRED
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      # Free Render blocks SMTP, so email goes through Brevo's API (sender: MAIL_USERNAME).
+      - key: BREVO_API_KEY
+        sync: false
+      - key: MAIL_USERNAME
+        value: fittrackers2026@gmail.com
+      - key: CONTACT_EMAIL
+        value: fittrackers2026@gmail.com
+      - key: APP_FRONTEND_URL
+        value: https://fittracker-tz.onrender.com
+      - key: APP_CORS_ORIGINS
+        value: https://fittracker-tz.onrender.com
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      # Fits the free plan's 512 MB (measured at about 350 MB).
+      - key: JAVA_OPTS
+        value: -Xmx256m -Xss512k -XX:MaxMetaspaceSize=160m -XX:ReservedCodeCacheSize=64m -XX:MaxDirectMemorySize=32m -XX:+UseSerialGC -XX:TieredStopAtLevel=1
+      - key: GOOGLE_CLIENT_ID
+        value: ""
+
+  - type: web
+    name: fittracker-tz
+    runtime: static
+    repo: https://github.com/premisess/fitness-tracker-ui
+    branch: main
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        value: /api
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://fittracker-api-tz.onrender.com/api/*
+      # Client-side pages like /dashboard load the app.
+      - type: rewrite
+        source: /*
+        destination: /index.html

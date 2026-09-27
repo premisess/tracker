@@ -6,22 +6,26 @@ import com.fitness.tracker.exception.UnauthorizedException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import com.fitness.tracker.dto.ProfileDTO;
 import com.fitness.tracker.dto.ProfileResponse;
 import com.fitness.tracker.entity.Profile;
+import com.fitness.tracker.entity.ProfilePicture;
+import com.fitness.tracker.repository.ProfilePictureRepository;
 import com.fitness.tracker.repository.ProfileRepository;
 import com.fitness.tracker.repository.UserRepository;
 import com.fitness.tracker.security.SecurityUtil;
 import com.fitness.tracker.service.ProfileService;
 import com.fitness.tracker.entity.User;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.CacheControl;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
+import java.time.LocalDateTime;
+import java.util.UUID;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -32,11 +36,14 @@ public class ProfileController {
     private final ProfileService profileService;
     private final UserRepository userRepository;
     private final ProfileRepository profileRepository;
+    private final ProfilePictureRepository profilePictureRepository;
 
-    public ProfileController(ProfileService profileService, UserRepository userRepository, ProfileRepository profileRepository) {
+    public ProfileController(ProfileService profileService, UserRepository userRepository, ProfileRepository profileRepository,
+                             ProfilePictureRepository profilePictureRepository) {
         this.profileService = profileService;
         this.userRepository = userRepository;
         this.profileRepository = profileRepository;
+        this.profilePictureRepository = profilePictureRepository;
     }
 
     @GetMapping
@@ -52,27 +59,19 @@ public class ProfileController {
     @PostMapping("/upload-picture")
     public ResponseEntity<String> uploadPicture(@RequestParam("file") MultipartFile file) {
         String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            throw new BadRequestException("Only image uploads are allowed");
+        // Photo formats only: an SVG can carry scripts, and photos are served from the site's own address.
+        if (contentType == null || !java.util.Set.of("image/jpeg", "image/png", "image/gif", "image/webp").contains(contentType)) {
+            throw new BadRequestException("Please upload a JPG, PNG, GIF or WebP image");
         }
 
-        // Strip any path segments from the original name so it can't escape the uploads dir.
-        String originalName = Paths.get(file.getOriginalFilename() != null ? file.getOriginalFilename() : "image")
-                .getFileName().toString();
-        String fileName = System.currentTimeMillis() + "_" + originalName;
-
-        try {
-            // Must be absolute: MultipartFile resolves relative paths against the servlet
-            // container's temp directory, so the old "uploads/" + name never landed where
-            // getPicture() looks for it.
-            Path uploadsDir = Paths.get("uploads").toAbsolutePath().normalize();
-            Files.createDirectories(uploadsDir);
-            try (InputStream in = file.getInputStream()) {
-                Files.copy(in, uploadsDir.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
-            }
+        byte[] bytes;
+        try (InputStream in = file.getInputStream()) {
+            bytes = in.readAllBytes();
         } catch (IOException e) {
             throw new BadRequestException("Upload failed. Please try a different image.");
         }
+        // A new random name each time, so browsers never show a cached old photo.
+        String fileName = UUID.randomUUID() + extensionFor(contentType);
 
         String email = SecurityUtil.getCurrentUserEmail();
         User user = userRepository.findByEmail(email)
@@ -85,6 +84,15 @@ public class ProfileController {
                     return p;
                 });
 
+        // Stored in the database rather than on disk, so it survives the app restarting.
+        ProfilePicture picture = profilePictureRepository.findById(user.getId()).orElseGet(ProfilePicture::new);
+        picture.setUserId(user.getId());
+        picture.setFileName(fileName);
+        picture.setContentType(contentType);
+        picture.setData(bytes);
+        picture.setUpdatedAt(LocalDateTime.now());
+        profilePictureRepository.save(picture);
+
         profile.setProfilePic(fileName);
         profileRepository.save(profile);
 
@@ -93,6 +101,16 @@ public class ProfileController {
 
     @GetMapping("/picture/{fileName}")
     public ResponseEntity<Resource> getPicture(@PathVariable String fileName) {
+        var stored = profilePictureRepository.findByFileName(fileName);
+        if (stored.isPresent()) {
+            ProfilePicture picture = stored.get();
+            return ResponseEntity.ok()
+                    .header("Content-Type", picture.getContentType())
+                    // Each upload gets a new name, so a name's content never changes.
+                    .cacheControl(CacheControl.maxAge(java.time.Duration.ofDays(30)).cachePrivate())
+                    .body(new ByteArrayResource(picture.getData()));
+        }
+        // Photos uploaded before they were kept in the database.
         try {
             Path uploadsDir = Paths.get("uploads/").toAbsolutePath().normalize();
             Path filePath = uploadsDir.resolve(fileName).normalize();
@@ -110,5 +128,14 @@ public class ProfileController {
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    private static String extensionFor(String contentType) {
+        return switch (contentType) {
+            case "image/png" -> ".png";
+            case "image/gif" -> ".gif";
+            case "image/webp" -> ".webp";
+            default -> ".jpg";
+        };
     }
 }
