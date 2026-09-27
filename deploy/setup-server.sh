@@ -64,14 +64,17 @@ else
     cp "$DEPLOY_DIR/.env.example" "$ENV_FILE"
     chmod 600 "$ENV_FILE"
 
-    read -r -p "DuckDNS name (just the name, e.g. fittracker): " duck_name
-    duck_name="${duck_name%.duckdns.org}"
-    read -r -s -p "DuckDNS token (hidden while typing): " duck_token; echo
+    read -r -p "Your domain (press Enter if you don't have one yet): " domain
+    domain="${domain#https://}"; domain="${domain#http://}"; domain="${domain%/}"
+    if [ -z "$domain" ]; then
+        # sslip.io answers any name containing an IP with that IP, so this works with no sign-up.
+        ip="$(curl -fsS https://api.ipify.org)"
+        domain="fittracker.${ip//./-}.sslip.io"
+        echo "Using the free automatic address: $domain"
+    fi
     read -r -s -p "Gmail app password for fittrackers2026@gmail.com (hidden, spaces are fine): " mail_password; echo
 
-    set_env SITE_ADDRESS "$duck_name.duckdns.org"
-    set_env DUCKDNS_DOMAIN "$duck_name"
-    set_env DUCKDNS_TOKEN "$duck_token"
+    set_env SITE_ADDRESS "$domain"
     set_env MAIL_PASSWORD "${mail_password// /}"
     set_env DB_PASSWORD "$(openssl rand -hex 24)"
     set_env DB_ROOT_PASSWORD "$(openssl rand -hex 24)"
@@ -89,4 +92,4 @@ echo "Register your own account first: the first account becomes the admin."
 echo
 echo "Useful commands (run from $BACKEND_DIR):"
 echo "  sudo docker compose --env-file deploy/.env -f deploy/docker-compose.yml ps"
-echo "  sudo docker compose --env-file deploy/.env -f deploy/docker-compose.yml logs -f backend web duckdns"
+echo "  sudo docker compose --env-file deploy/.env -f deploy/docker-compose.yml logs -f backend web"
