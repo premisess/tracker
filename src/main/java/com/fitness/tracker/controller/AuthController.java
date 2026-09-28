@@ -43,6 +43,9 @@ public class AuthController {
     @PostMapping("/google")
     public ResponseEntity<AuthResponse> google(@Valid @RequestBody GoogleSignInRequest request,
                                                  HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
+        if (request.getAccessToken() != null && !request.getAccessToken().isBlank()) {
+            return ResponseEntity.ok(authService.signInWithGoogleAccessToken(request.getAccessToken(), httpRequest, httpResponse));
+        }
         return ResponseEntity.ok(authService.signInWithGoogle(request.getCredential(), httpRequest, httpResponse));
     }
 

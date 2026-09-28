@@ -96,7 +96,15 @@ public class AuthService {
      * since Google has confirmed the address), else creates a new one.
      */
     public AuthResponse signInWithGoogle(String credential, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
-        GoogleIdentity identity = googleIdTokenVerifier.verify(credential);
+        return signInWithGoogle(googleIdTokenVerifier.verify(credential), httpRequest, httpResponse);
+    }
+
+    /** The same, with an access token from Google's sign-in popup instead of an ID token. */
+    public AuthResponse signInWithGoogleAccessToken(String accessToken, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
+        return signInWithGoogle(googleIdTokenVerifier.verifyAccessToken(accessToken), httpRequest, httpResponse);
+    }
+
+    private AuthResponse signInWithGoogle(GoogleIdentity identity, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
         if (!identity.emailVerified()) {
             throw new UnauthorizedException("Your Google account's email address isn't verified yet. Verify it with Google, or sign up with email instead.");
         }

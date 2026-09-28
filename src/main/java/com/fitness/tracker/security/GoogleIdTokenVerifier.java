@@ -42,6 +42,8 @@ public class GoogleIdTokenVerifier {
     private static final Logger log = LoggerFactory.getLogger(GoogleIdTokenVerifier.class);
 
     private static final URI GOOGLE_CERTS = URI.create("https://www.googleapis.com/oauth2/v3/certs");
+    private static final String TOKEN_INFO = "https://oauth2.googleapis.com/tokeninfo";
+    private static final URI USER_INFO = URI.create("https://openidconnect.googleapis.com/v1/userinfo");
     private static final Set<String> ISSUERS = Set.of("accounts.google.com", "https://accounts.google.com");
     private static final long CLOCK_SKEW_SECONDS = 300;
     // Google rotates its keys every few days. An unknown key id triggers a refetch, at most once a minute.
@@ -116,6 +118,55 @@ public class GoogleIdTokenVerifier {
         } catch (Exception e) {
             log.warn("Rejected a Google ID token: {}", e.toString());
             throw new UnauthorizedException(FAILED);
+        }
+    }
+
+    /**
+     * Checks an access token from Google's sign-in popup (the website's own button, which never shows
+     * the last-used account). Google's tokeninfo endpoint confirms it is live and was issued to our
+     * client ID; the name comes from the userinfo endpoint and is optional.
+     */
+    public GoogleIdentity verifyAccessToken(String accessToken) {
+        if (clientId.isEmpty()) {
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Google sign-in isn't set up on this server yet.");
+        }
+        if (accessToken == null || accessToken.isBlank() || accessToken.length() > 4096) {
+            throw new UnauthorizedException(FAILED);
+        }
+        try {
+            HttpRequest tokenInfo = HttpRequest.newBuilder(URI.create(TOKEN_INFO + "?access_token="
+                            + java.net.URLEncoder.encode(accessToken, StandardCharsets.UTF_8)))
+                    .timeout(Duration.ofSeconds(10)).GET().build();
+            HttpResponse<byte[]> response = HTTP.send(tokenInfo, HttpResponse.BodyHandlers.ofByteArray());
+            if (response.statusCode() != 200) {
+                throw new UnauthorizedException(FAILED);
+            }
+            Map<String, Object> info = jsonMapper.readValue(response.body(), JSON_OBJECT);
+            boolean ours = clientId.equals(info.get("aud")) || clientId.equals(info.get("azp"));
+            if (!ours || !(info.get("sub") instanceof String subject) || subject.isBlank()
+                    || !(info.get("email") instanceof String email) || email.isBlank()) {
+                throw new UnauthorizedException(FAILED);
+            }
+            return new GoogleIdentity(subject, email, isTrue(info.get("email_verified")), fetchName(accessToken));
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Rejected a Google access token: {}", e.toString());
+            throw new UnauthorizedException(FAILED);
+        }
+    }
+
+    private String fetchName(String accessToken) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder(USER_INFO)
+                    .header("Authorization", "Bearer " + accessToken)
+                    .timeout(Duration.ofSeconds(10)).GET().build();
+            HttpResponse<byte[]> response = HTTP.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            if (response.statusCode() != 200) return null;
+            Map<String, Object> info = jsonMapper.readValue(response.body(), JSON_OBJECT);
+            return info.get("name") instanceof String name && !name.isBlank() ? name.trim() : null;
+        } catch (Exception e) {
+            return null;
         }
     }
 
