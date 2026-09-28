@@ -22,9 +22,9 @@ services:
         sync: false
       - key: DB_PASSWORD
         sync: false
-      # Free Render blocks SMTP, so email goes through Brevo's API (sender: MAIL_USERNAME).
-      - key: BREVO_API_KEY
-        sync: false
+      # Free Render blocks SMTP. For email, add MAIL_SCRIPT_URL and MAIL_SCRIPT_SECRET (see
+      # deploy/gmail-sender.gs) or BREVO_API_KEY in the service's Environment tab. Without them
+      # the app works and just skips sending email.
       - key: MAIL_USERNAME
         value: fittrackers2026@gmail.com
       - key: CONTACT_EMAIL
