@@ -68,7 +68,7 @@ public class AuthService {
 
         userRepository.save(user);
         // The welcome email carries the verification link.
-        emailVerificationService.sendLink(user, true);
+        emailVerificationService.sendCode(user, true);
 
         // Log the new user straight into a session, same as login.
         Authentication authentication = authenticationManager.authenticate(
@@ -76,7 +76,7 @@ public class AuthService {
         );
         establishSession(authentication, httpRequest, httpResponse);
 
-        return AuthResponse.of(user);
+        return AuthResponse.of(user, emailVerificationService.isRequired(user));
     }
 
     public AuthResponse login(LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
@@ -88,7 +88,7 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UnauthorizedException("Your session has expired. Please sign in again."));
 
-        return AuthResponse.of(user);
+        return AuthResponse.of(user, emailVerificationService.isRequired(user));
     }
 
     /**
@@ -130,7 +130,7 @@ public class AuthService {
         UserDetails details = userDetailsService.loadUserByUsername(user.getEmail());
         establishSession(UsernamePasswordAuthenticationToken.authenticated(details, null, details.getAuthorities()),
                 httpRequest, httpResponse);
-        return AuthResponse.of(user);
+        return AuthResponse.of(user, emailVerificationService.isRequired(user));
     }
 
     public AuthProvidersResponse providers() {
@@ -154,7 +154,7 @@ public class AuthService {
         String email = SecurityUtil.getCurrentUserEmail();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UnauthorizedException("Your session has expired. Please sign in again."));
-        return AuthResponse.of(user);
+        return AuthResponse.of(user, emailVerificationService.isRequired(user));
     }
 
     private User.Role roleForNewUser() {

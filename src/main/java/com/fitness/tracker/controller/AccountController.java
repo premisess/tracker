@@ -7,6 +7,7 @@ import com.fitness.tracker.dto.ChangeEmailRequest;
 import com.fitness.tracker.dto.ChangePasswordRequest;
 import com.fitness.tracker.entity.User;
 import com.fitness.tracker.service.AccountService;
+import com.fitness.tracker.service.EmailVerificationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
@@ -18,9 +19,12 @@ import java.util.Map;
 @RequestMapping("/api/account")
 public class AccountController {
 
+    private final EmailVerificationService emailVerificationService;
+
     private final AccountService accountService;
 
-    public AccountController(AccountService accountService) {
+    public AccountController(AccountService accountService, EmailVerificationService emailVerificationService) {
+        this.emailVerificationService = emailVerificationService;
         this.accountService = accountService;
     }
 
@@ -34,7 +38,7 @@ public class AccountController {
     public ResponseEntity<AuthResponse> changeEmail(@Valid @RequestBody ChangeEmailRequest request,
                                                       HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
         User user = accountService.changeEmail(request, httpRequest, httpResponse);
-        return ResponseEntity.ok(AuthResponse.of(user));
+        return ResponseEntity.ok(AuthResponse.of(user, emailVerificationService.isRequired(user)));
     }
 
     @PutMapping("/name")

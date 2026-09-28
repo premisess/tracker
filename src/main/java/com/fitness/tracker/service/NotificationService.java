@@ -31,15 +31,15 @@ public class NotificationService {
                         "FitTracker Team");
     }
 
-    public void sendVerificationEmail(User user, String link, boolean welcome) {
-        String subject = welcome ? "Welcome to FitTracker - please confirm your email" : "FitTracker - confirm your email";
+    public void sendVerificationCode(User user, String code, boolean welcome) {
+        String subject = code + " is your FitTracker confirmation code";
         String intro = welcome
-                ? "Welcome to FitTracker! Your account is ready.\n\nPlease confirm your email address so we can keep your account secure:\n"
-                : "Please confirm your email address by opening this link:\n";
+                ? "Welcome to FitTracker! To finish creating your account, enter the code below.\n\n"
+                : "Enter the code below in FitTracker to confirm your email address.\n\n";
         send(user.getEmail(), subject,
                 "Hi " + user.getName() + ",\n\n" +
-                        intro + link + "\n\n" +
-                        "The link works for 24 hours. If you didn't create a FitTracker account, you can ignore this email.\n\n" +
+                        intro + "    " + code + "\n\n" +
+                        "The code works for 15 minutes. If you didn't create a FitTracker account, you can ignore this email.\n\n" +
                         "FitTracker Team");
     }
 

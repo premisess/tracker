@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.BufferingClientHttpRequestFactory;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
@@ -34,7 +36,11 @@ public class MailTransport {
     private final String brevoApiKey;
     private final String scriptUrl;
     private final String scriptSecret;
-    private final RestClient http = RestClient.create();
+    // Buffered so each request states its size up front instead of streaming in chunks,
+    // which some receivers (including simple web apps) don't accept.
+    private final RestClient http = RestClient.builder()
+            .requestFactory(new BufferingClientHttpRequestFactory(new JdkClientHttpRequestFactory()))
+            .build();
 
     public MailTransport(JavaMailSender mailSender,
                          @Value("${spring.mail.username}") String from,
@@ -48,6 +54,11 @@ public class MailTransport {
         this.brevoApiKey = brevoApiKey;
         this.scriptUrl = scriptUrl;
         this.scriptSecret = scriptSecret;
+    }
+
+    /** Whether any way of sending email is set up. */
+    public boolean isConfigured() {
+        return !brevoApiKey.isBlank() || !scriptUrl.isBlank() || !smtpPassword.isBlank();
     }
 
     /** Throws if the email couldn't be handed over for delivery. */

@@ -58,6 +58,10 @@ public class User {
     @Column(name = "email_verification_expires_at")
     private LocalDateTime emailVerificationExpiresAt;
 
+    // Wrong confirmation codes entered since the last code was sent.
+    @Column(name = "email_verification_attempts", nullable = false)
+    private int emailVerificationAttempts;
+
     // How the account was created. A LOCAL account can still be linked to Google later.
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)

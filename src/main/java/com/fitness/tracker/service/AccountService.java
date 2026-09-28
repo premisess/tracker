@@ -112,7 +112,7 @@ public class AccountService {
         securityContextRepository.saveContext(context, httpRequest, httpResponse);
 
         if (changed) {
-            emailVerificationService.sendLink(user, false);
+            emailVerificationService.sendCode(user, false);
         }
         return user;
     }

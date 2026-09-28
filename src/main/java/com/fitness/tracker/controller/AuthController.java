@@ -46,16 +46,16 @@ public class AuthController {
         return ResponseEntity.ok(authService.signInWithGoogle(request.getCredential(), httpRequest, httpResponse));
     }
 
-    @PostMapping("/verify-email")
-    public ResponseEntity<Map<String, String>> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
-        emailVerificationService.verify(request.getToken());
-        return ResponseEntity.ok(Map.of("message", "Your email address is verified."));
+    @PostMapping("/verify-code")
+    public ResponseEntity<Map<String, String>> verifyCode(@Valid @RequestBody VerifyCodeRequest request) {
+        emailVerificationService.verifyCode(request.getCode());
+        return ResponseEntity.ok(Map.of("message", "Your email address is confirmed."));
     }
 
     @PostMapping("/resend-verification")
     public ResponseEntity<Map<String, String>> resendVerification() {
         emailVerificationService.resendForCurrentUser();
-        return ResponseEntity.ok(Map.of("message", "We've sent a new verification link to your email."));
+        return ResponseEntity.ok(Map.of("message", "We've sent a new code to your email."));
     }
 
     @PostMapping("/logout")
