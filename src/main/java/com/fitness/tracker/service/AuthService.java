@@ -23,7 +23,6 @@ import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -118,7 +117,8 @@ public class AuthService {
             user = new User();
             user.setName(identity.name() != null ? identity.name() : identity.email().substring(0, identity.email().indexOf('@')));
             user.setEmail(identity.email());
-            user.setPassword(passwordEncoder.encode(UUID.randomUUID() + "-" + UUID.randomUUID()));
+            // A random password nobody knows (they sign in with Google). BCrypt accepts at most 72 bytes.
+            user.setPassword(passwordEncoder.encode(randomUnusablePassword()));
             user.setCreatedAt(LocalDateTime.now());
             user.setRole(roleForNewUser());
             user.setAuthProvider(User.AuthProvider.GOOGLE);
@@ -163,6 +163,13 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UnauthorizedException("Your session has expired. Please sign in again."));
         return AuthResponse.of(user, emailVerificationService.isRequired(user));
+    }
+
+    /** 32 random bytes as 43 URL-safe characters: strong, and well under BCrypt's 72-byte limit. */
+    static String randomUnusablePassword() {
+        byte[] bytes = new byte[32];
+        new java.security.SecureRandom().nextBytes(bytes);
+        return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     private User.Role roleForNewUser() {
